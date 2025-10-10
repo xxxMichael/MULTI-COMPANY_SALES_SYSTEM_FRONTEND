@@ -121,7 +121,7 @@ export default function LoginPage() {
                         Contraseña
                       </label>
                       <Link
-                        to="/forgot-password"
+                        to="/recover-password"
                         className="text-sm text-slate-400 hover:text-slate-300 transition-colors"
                       >
                         ¿Olvidaste tu contraseña?

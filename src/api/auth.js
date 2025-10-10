@@ -50,3 +50,19 @@ export const checkEmail = (email) =>
 // 🔹 Crear moderador (solo ADMIN)
 export const createModerator = (payload) =>
   http.post("/api/users/admin/moderators", payload);
+
+export const resetPassword = (payload) =>
+  fetch("http://localhost:8080/api/users/reset-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).then(async (r) => {
+    const data = await r.json().catch(() => null);
+    if (!r.ok) {
+      const err = new Error(data?.message || "Error");
+      err.response = { status: r.status, data };
+      throw err;
+    }
+    return data;
+  });
+
