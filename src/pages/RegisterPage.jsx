@@ -15,20 +15,112 @@ export default function RegisterPage() {
     telefono: "",
     direccion: "",
     genero: "",
-    rol: "COMPRADOR",
+    rol: "USUARIO",
   });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
-  const onChange = (e) =>
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  // Validation functions
+  const validateCedula = (cedula) => {
+    if (!/^\d{10}$/.test(cedula)) return "La cédula debe tener exactamente 10 dígitos.";
+    const province = parseInt(cedula.substring(0, 2));
+    if (province < 1 || province > 24) return "Los primeros dos dígitos deben ser un código de provincia válido (01-24).";
+    const digits = cedula.split('').map(Number);
+    const multipliers = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      let product = digits[i] * multipliers[i];
+      if (product >= 10) product -= 9;
+      sum += product;
+    }
+    const checkDigit = (10 - (sum % 10)) % 10;
+    if (checkDigit !== digits[9]) return "La cédula no es válida.";
+    return "";
+  };
+
+  const validatePassword = (password) => {
+    if (password.length < 8) return "La contraseña debe tener al menos 8 caracteres.";
+    if (!/[A-Z]/.test(password)) return "La contraseña debe contener al menos una letra mayúscula.";
+    if (!/[a-z]/.test(password)) return "La contraseña debe contener al menos una letra minúscula.";
+    if (!/\d/.test(password)) return "La contraseña debe contener al menos un número.";
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) return "La contraseña debe contener al menos un carácter especial.";
+    return "";
+  };
+
+  const validatePhone = (phone) => {
+    if (!/^\d{10}$/.test(phone)) return "El teléfono debe tener exactamente 10 dígitos.";
+    return "";
+  };
+
+  const validateGender = (gender) => {
+    if (!["F", "M"].includes(gender.toUpperCase())) return "El género debe ser F o M.";
+    return "";
+  };
+
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+    // Clear error on change
+    if (errors[name]) {
+      setErrors((err) => ({ ...err, [name]: "" }));
+    }
+  };
+
+  const onBlur = (e) => {
+    const { name, value } = e.target;
+    let error = "";
+    switch (name) {
+      case "cedula":
+        error = validateCedula(value);
+        break;
+      case "contrasena":
+        error = validatePassword(value);
+        break;
+      case "telefono":
+        error = validatePhone(value);
+        break;
+      case "genero":
+        error = validateGender(value);
+        break;
+      default:
+        break;
+    }
+    setErrors((err) => ({ ...err, [name]: error }));
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMsg("");
+
+    // Validate all fields
+    const newErrors = {};
+    let hasErrors = false;
+
+    const validations = {
+      cedula: validateCedula,
+      contrasena: validatePassword,
+      telefono: validatePhone,
+      genero: validateGender,
+    };
+
+    Object.keys(validations).forEach(key => {
+      const error = validations[key](form[key]);
+      if (error) {
+        newErrors[key] = error;
+        hasErrors = true;
+      }
+    });
+
+    if (hasErrors) {
+      setErrors(newErrors);
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await registerUser(form);
@@ -125,8 +217,11 @@ export default function RegisterPage() {
                       name="cedula"
                       value={form.cedula}
                       onChange={onChange}
+                      onBlur={onBlur}
                       placeholder="Ingrese su cédula"
                       required
+                      maxLength="10"
+                      error={errors.cedula}
                     />
                     <Input
                       label="Correo electrónico"
@@ -141,19 +236,28 @@ export default function RegisterPage() {
                     <Input
                       label="Contraseña"
                       name="contrasena"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       value={form.contrasena}
                       onChange={onChange}
+                      onBlur={onBlur}
                       placeholder="Mín. 8 caracteres"
                       required
                       autoComplete="new-password"
+                      error={errors.contrasena}
+                      showPasswordToggle={true}
+                      onToggleShowPassword={() => setShowPassword(!showPassword)}
                     />
                     <Input
                       label="Teléfono"
                       name="telefono"
+                      type="tel"
                       value={form.telefono}
                       onChange={onChange}
-                      placeholder="999999999"
+                      onBlur={onBlur}
+                      placeholder="9999999999"
+                      required
+                      maxLength="10"
+                      error={errors.telefono}
                     />
                     <Input
                       label="Dirección"
@@ -162,13 +266,27 @@ export default function RegisterPage() {
                       onChange={onChange}
                       placeholder="Ambato"
                     />
-                    <Input
-                      label="Género"
-                      name="genero"
-                      value={form.genero}
-                      onChange={onChange}
-                      placeholder="F / M"
-                    />
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="genero" className="text-sm font-medium text-slate-200">
+                        Género
+                      </label>
+                      <select
+                        id="genero"
+                        name="genero"
+                        value={form.genero}
+                        onChange={onChange}
+                        onBlur={onBlur}
+                        required
+                        className={`w-full rounded-lg bg-slate-800/60 border px-3 py-2 text-slate-100 placeholder:text-slate-400 outline-none ${
+                          errors.genero ? "border-red-500 focus:border-red-500 focus:ring-red-500/30" : "border-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                        }`}
+                      >
+                        <option value="">Seleccione</option>
+                        <option value="F">Femenino</option>
+                        <option value="M">Masculino</option>
+                      </select>
+                      {errors.genero && <span className="text-sm text-red-400">{errors.genero}</span>}
+                    </div>
                   </div>
                   {msg && (
                     <div className="relative">
