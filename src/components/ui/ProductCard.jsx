@@ -1,6 +1,7 @@
 // Componente de tarjeta de producto
 import { useState, useEffect } from "react";
 import { useAtom } from "jotai";
+import { Flag } from "lucide-react";
 import { productsApi, interestApi } from "../../api/products";
 import { getAuth } from "../../state/auth";
 import { favoritesStateAtom, favoritesCountAtom } from "../../state/favorites";
@@ -12,10 +13,14 @@ export default function ProductCard({ product, onProductClick }) {
   const [imageError, setImageError] = useState(false);
   const auth = getAuth();
 
+  const handleReport = (e) => {
+    e.stopPropagation();
+    alert(`Reportar producto: "${product.nombre}"\n\nFuncionalidad en desarrollo.`);
+  };
+
   const mainPhoto = product.fotos && product.fotos.length > 0 ? product.fotos[0] : null;
   const imageUrl = mainPhoto ? productsApi.getImageUrl(mainPhoto.url) : null;
 
-  // Obtener estado del producto desde el store global
   const isInterested = favoritesState.get(product.idProducto) || false;
   const interestCount = favoritesCount.get(product.idProducto) || 0;
 
@@ -66,7 +71,6 @@ export default function ProductCard({ product, onProductClick }) {
         count: response.data.cantidadMeInteresa ?? response.data.count ?? response.data.totalIntereses
       });
       
-      // Intentar con los campos posibles
       const count = response.data.cantidadMeInteresa ?? response.data.count ?? response.data.totalIntereses ?? 0;
       
       const newCount = new Map(favoritesCount);
@@ -165,32 +169,44 @@ export default function ProductCard({ product, onProductClick }) {
       <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/10 to-violet-500/10 rounded-2xl blur opacity-80 pointer-events-none group-hover:opacity-100 transition duration-300" />
 
       <div className="relative rounded-2xl border border-slate-800/50 bg-slate-900/90 backdrop-blur-xl shadow-2xl overflow-hidden transition-shadow duration-300 cursor-pointer">
-        {/* Botón de favorito */}
-        <button
-          onClick={toggleInterest}
-          disabled={loading}
-          className={`absolute top-3 right-3 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
-            isInterested
-              ? "bg-red-500 text-white"
-              : "bg-white/5 text-slate-300 hover:bg-white/10 hover:text-red-500"
-          } ${loading ? "opacity-50 cursor-not-allowed" : "hover:scale-110"}`}
-          title={isInterested ? "Quitar de favoritos" : "Agregar a favoritos"}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill={isInterested ? "currentColor" : "none"}
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
+        {/* Botones superiores */}
+        <div className="absolute top-3 right-3 z-10 flex gap-2">
+          {/* Botón de reportar */}
+          <button
+            onClick={handleReport}
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 bg-white/5 text-slate-300 hover:bg-orange-500/20 hover:text-orange-400 hover:scale-110 backdrop-blur-md"
+            title="Reportar producto"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-            />
-          </svg>
-        </button>
+            <Flag className="w-5 h-5" />
+          </button>
+
+          {/* Botón de favorito */}
+          <button
+            onClick={toggleInterest}
+            disabled={loading}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 backdrop-blur-md ${
+              isInterested
+                ? "bg-red-500 text-white"
+                : "bg-white/5 text-slate-300 hover:bg-white/10 hover:text-red-500"
+            } ${loading ? "opacity-50 cursor-not-allowed" : "hover:scale-110"}`}
+            title={isInterested ? "Quitar de favoritos" : "Agregar a favoritos"}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill={isInterested ? "currentColor" : "none"}
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+              />
+            </svg>
+          </button>
+        </div>
 
         {/* Badge de tipo */}
         <div className="absolute top-3 left-3 z-10">
