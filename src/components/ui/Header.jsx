@@ -58,7 +58,18 @@ export default function Header() {
             >
               Productos
             </a>
-     
+            {auth?.user && (
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate("/my-products");
+                }}
+                className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
+              >
+                Mis Productos
+              </a>
+            )}
             <a
               href="#"
               className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
