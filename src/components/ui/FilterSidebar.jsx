@@ -31,7 +31,6 @@ export default function FilterSidebar({ filters, onFilterChange, onApplyFilters 
 
   return (
     <div className="sticky top-4 group">
-      {/* Decorative gradient border */}
       <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/10 to-violet-500/10 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-300 pointer-events-none" />
       
       <div className="relative rounded-2xl border border-slate-800/50 bg-slate-900/90 backdrop-blur-xl shadow-2xl p-6">
@@ -172,13 +171,14 @@ export default function FilterSidebar({ filters, onFilterChange, onApplyFilters 
           </div>
         </div>
 
-        {/* Botón aplicar */}
+        {/* Botón aplicar 
         <button
           onClick={() => onApplyFilters(localFilters)}
           className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-medium transition-all duration-300"
         >
           Aplicar Filtros
         </button>
+        */}
       </div>
     </div>
   );

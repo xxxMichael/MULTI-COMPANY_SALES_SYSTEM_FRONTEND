@@ -32,7 +32,7 @@ export default function LoginPage() {
           rol: res.rol,
         },
       });
-      navigate("/welcome", { replace: true });
+      navigate("/marketplace", { replace: true });
     } catch (err) {
       const message =
         err?.response?.data?.message || "No se pudo iniciar sesión";

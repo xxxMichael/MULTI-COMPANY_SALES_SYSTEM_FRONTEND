@@ -1,13 +1,14 @@
 // Página principal del marketplace
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { productsApi } from "../api/products";
+import { productsApi, interestApi } from "../api/products";
 import { getAuth } from "../state/auth";
 import Header from "../components/ui/Header";
 import ProductCard from "../components/ui/ProductCard";
 import ProductDetailModal from "../components/ui/ProductDetailModal";
 import FilterSidebar from "../components/ui/FilterSidebar";
 import Pagination from "../components/ui/Pagination";
+import { Heart } from "lucide-react";
 
 export default function MarketplacePage() {
   const navigate = useNavigate();
@@ -17,12 +18,10 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
-  // Paginación
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
-  // Filtros
   const [filters, setFilters] = useState({
     searchTerm: "",
     tipo: "",
@@ -41,39 +40,83 @@ export default function MarketplacePage() {
   // Sidebar móvil
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  // Filtro "Productos que me interesan"
+  const [showInterests, setShowInterests] = useState(false);
+
   useEffect(() => {
     loadProducts();
-  }, [currentPage, sortBy]);
+  }, [currentPage, sortBy, filters, showInterests]);
 
   const loadProducts = async () => {
     setLoading(true);
     setError("");
 
     try {
-      const hasFilters =
-        filters.searchTerm ||
-        filters.tipo ||
-        filters.ubicacion ||
-        filters.minPrice > 0 ||
-        filters.maxPrice < 10000 ||
-        filters.disponibilidad !== null;
+      let response;
 
-      const response = hasFilters
-        ? await productsApi.filter({
-            ...filters,
-            page: currentPage,
-            size: 12,
-            sort: sortBy,
+      // Si está activo el filtro "Productos que me interesan"
+      if (showInterests) {
+        if (!auth?.user?.id) {
+          navigate("/login");
+          return;
+        }
+        response = await interestApi.getUserInterests(auth.user.id, {
+          page: currentPage,
+          size: 12,
+          sort: sortBy,
+        });
+
+        // Los productos de intereses vienen con fotos: null, necesitamos cargar los detalles completos
+        const productsWithDetails = await Promise.all(
+          (response.data.content || []).map(async (product) => {
+            try {
+              const detailResponse = await productsApi.getById(product.idProducto);
+              return detailResponse.data;
+            } catch (err) {
+              console.error(`Error loading details for product ${product.idProducto}:`, err);
+              return product; // Si falla, usar el producto sin detalles
+            }
           })
-        : await productsApi.getAll({
-            page: currentPage,
-            size: 12,
-            sort: sortBy,
-          });
+        );
 
-      setProducts(response.data.content);
-      setTotalPages(response.data.totalPages);
-      setTotalElements(response.data.totalElements);
+        // Filtrar solo productos ACTIVOS
+        const filteredProducts = productsWithDetails.filter(
+          (product) => product.estado === "ACTIVO"
+        );
+        
+        setProducts(filteredProducts);
+        setTotalPages(response.data.totalPages);
+        setTotalElements(response.data.totalElements);
+      } else {
+        const hasFilters =
+          filters.searchTerm ||
+          filters.tipo ||
+          filters.ubicacion ||
+          filters.minPrice > 0 ||
+          filters.maxPrice < 10000 ||
+          filters.disponibilidad !== null;
+
+        response = hasFilters
+          ? await productsApi.filter({
+              ...filters,
+              page: currentPage,
+              size: 12,
+              sort: sortBy,
+            })
+          : await productsApi.getAll({
+              page: currentPage,
+              size: 12,
+              sort: sortBy,
+            });
+
+        // Mostrar solo productos con estado ACTIVO
+        const filteredProducts = (response.data.content || []).filter(
+          (product) => product.estado === "ACTIVO"
+        );
+        setProducts(filteredProducts);
+        setTotalPages(response.data.totalPages);
+        setTotalElements(response.data.totalElements);
+      }
     } catch (err) {
       console.error("Error loading products:", err);
       setError("Error al cargar los productos. Intenta de nuevo.");
@@ -83,7 +126,8 @@ export default function MarketplacePage() {
   };
 
   const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
+  setFilters(newFilters);
+  setCurrentPage(0);
   };
 
   const handleApplyFilters = (newFilters) => {
@@ -136,14 +180,33 @@ export default function MarketplacePage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-slate-50">
-                  Productos Disponibles
+                  {showInterests ? "Productos que me interesan" : "Productos Disponibles"}
                 </h2>
-                <p className="text-slate-400 text-sm mt-1">
+              {/*<p className="text-slate-400 text-sm mt-1">
                   {totalElements} productos encontrados
-                </p>
+                </p>*/}  
+                
               </div>
 
-              <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
+                {/* Botón "Productos que me interesan" */}
+                {auth?.user?.id && (
+                  <button
+                    onClick={() => {
+                      setShowInterests(!showInterests);
+                      setCurrentPage(0);
+                    }}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 shadow-lg ${
+                      showInterests
+                        ? "bg-gradient-to-r from-red-600 to-pink-600 text-white hover:from-red-500 hover:to-pink-500"
+                        : "bg-slate-800/60 border border-slate-700 text-slate-100 hover:bg-slate-700/60"
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${showInterests ? "fill-white" : ""}`} />
+                    Me interesan
+                  </button>
+                )}
+
                 {/* Botón filtros móvil */}
                 <button
                   onClick={() => setShowMobileFilters(true)}
