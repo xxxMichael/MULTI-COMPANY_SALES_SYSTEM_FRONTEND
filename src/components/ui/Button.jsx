@@ -9,3 +9,4 @@ export function Button({ children, loading = false, ...props }) {
     </button>
   );
 }
+export default Button;
