@@ -1,5 +1,5 @@
 // src/pages/CreateProductPage.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Upload, Trash2, Plus } from "lucide-react";
 import Header from "../components/ui/Header";
@@ -43,6 +43,19 @@ export default function CreateProductPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [resultModal, setResultModal] = useState({ open: false, success: false, message: "" });
+
+  // Bloquear scroll cuando el modal de resultado esté abierto
+  useEffect(() => {
+    if (resultModal.open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [resultModal.open]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -123,9 +136,11 @@ export default function CreateProductPage() {
         response = await myProductsApi.create(productData);
       }
 
-      setSuccess(true);
+  setSuccess(true);
+  // Mostrar modal de éxito
+  setResultModal({ open: true, success: true, message: "Producto creado exitosamente." });
 
-      // Limpiar formulario
+  // Limpiar formulario
       setFormData({
         codigo: "",
         nombre: "",
@@ -139,17 +154,18 @@ export default function CreateProductPage() {
       });
       setFiles([]);
       setPreviewUrls([]);
-
       // Redireccionar después de 2 segundos
       setTimeout(() => {
         navigate("/my-products");
       }, 2000);
     } catch (err) {
       console.error("Error al crear producto:", err);
-      setError(
+      const errMsg =
         err.response?.data?.error ||
-          "Error al crear el producto. Por favor intenta de nuevo."
-      );
+        err.response?.data?.mensaje ||
+        "Error al crear el producto. Por favor intenta de nuevo.";
+      setError(errMsg);
+      setResultModal({ open: true, success: false, message: errMsg });
     } finally {
       setLoading(false);
     }
@@ -415,6 +431,30 @@ export default function CreateProductPage() {
           </div>
         </div>
       </div>
+
+      {/* Result modal (centered) */}
+      {resultModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="relative bg-slate-900 rounded-2xl border border-slate-800/60 p-6 max-w-md w-full mx-4 shadow-2xl z-10">
+            <h3 className={`text-lg font-semibold mb-2 ${resultModal.success ? 'text-green-400' : 'text-red-400'}`}>
+              {resultModal.success ? 'Éxito' : 'Error'}
+            </h3>
+            <p className="text-slate-200 mb-4">{resultModal.message}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setResultModal({ open: false, success: false, message: '' });
+                }}
+                className="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
