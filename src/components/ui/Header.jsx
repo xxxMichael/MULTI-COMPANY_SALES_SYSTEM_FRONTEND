@@ -1,15 +1,29 @@
 // Componente de header reutilizable
 import { useNavigate } from "react-router-dom";
 import { getAuth, clearAuth } from "../../state/auth";
+import { useState, useRef, useEffect } from "react";
 
 export default function Header() {
   const navigate = useNavigate();
   const auth = getAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const menuRef = useRef();
 
   const handleLogout = () => {
     clearAuth();
     navigate("/login");
   };
+
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowUserMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur-sm bg-slate-900/60 border-b border-slate-800">
@@ -38,7 +52,8 @@ export default function Header() {
 
           {/* Navegación */}
           <nav className="hidden md:flex items-center gap-6">
-            <a
+                 {/* Navegación 
+     <a
               href="#"
               onClick={(e) => {
                 e.preventDefault();
@@ -48,6 +63,7 @@ export default function Header() {
             >
               Inicio
             </a>
+            */}
             <a
               href="#"
               onClick={(e) => {
@@ -80,7 +96,7 @@ export default function Header() {
 
           {/* Acciones */}
           <div className="flex items-center gap-3">
-            {/* Carrito */}
+            {/* Carrito
             <button
               className="p-2 text-slate-300 hover:text-slate-50 relative transition-colors"
               title="Carrito de compras"
@@ -100,10 +116,11 @@ export default function Header() {
                 />
               </svg>
             </button>
-
+ */}
             {/* Usuario */}
-            <div className="flex items-center gap-2">
+            <div className="relative flex items-center gap-2" ref={menuRef}>
               <button
+                onClick={() => setShowUserMenu((s) => !s)}
                 className="p-2 text-slate-300 hover:text-slate-50 transition-colors"
                 title="Perfil de usuario"
               >
@@ -122,13 +139,43 @@ export default function Header() {
                   />
                 </svg>
               </button>
-              {auth?.user && (
-                <button
-                  onClick={handleLogout}
-                  className="text-sm text-red-400 hover:text-red-300 font-medium transition-colors"
-                >
-                  Salir
-                </button>
+
+              {/* User menu dropdown */}
+              {showUserMenu && auth?.user && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-slate-800 border border-slate-700 rounded-lg shadow-lg text-sm z-50">
+                  {/* User name (distinct style) */}
+                  <div className="px-4 py-3 border-b border-slate-700">
+                    <div className="text-slate-50 font-semibold text-base truncate">{auth.user.nombre || auth.user.username || auth.user.email || "Usuario"}</div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col p-1">
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate('/my-products');
+                      }}
+                      className="text-left px-4 py-2 rounded hover:bg-slate-700 text-slate-200"
+                    >
+                      Mis productos
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate('/welcome');
+                      }}
+                      className="text-left px-4 py-2 rounded hover:bg-slate-700 text-slate-200"
+                    >
+                      Perfil
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="text-left px-4 py-2 rounded hover:bg-red-700 text-red-400 mt-1"
+                    >
+                      Cerrar sesion
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
