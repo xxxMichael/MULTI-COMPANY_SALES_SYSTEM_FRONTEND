@@ -188,7 +188,7 @@ export default function ProductDetailModal({ product, onClose }) {
       >
         {/* Header */}
         <div className="sticky top-0 bg-slate-900/90 border-b border-slate-800/40 px-6 py-4 flex items-center justify-between z-10">
-          <h2 className="text-2xl font-bold text-slate-50">{product.nombre}</h2>
+          <h2 className="text-2xl font-bold text-slate-50 flex-1 pr-4 break-words break-all">{product.nombre}</h2>
           <button
             onClick={onClose}
             className="text-slate-300 hover:text-slate-100 transition-colors"
@@ -382,7 +382,7 @@ export default function ProductDetailModal({ product, onClose }) {
                 <h3 className="text-lg font-semibold text-slate-50 mb-2">
                   Descripción
                 </h3>
-                <p className="text-slate-300 whitespace-pre-line">
+                <p className="text-slate-300 whitespace-pre-line break-words break-all">
                   {product.descripcion || "Sin descripción"}
                 </p>
               </div>
@@ -411,7 +411,7 @@ export default function ProductDetailModal({ product, onClose }) {
                     />
                   </svg>
                   <span className="font-medium">Ubicación:</span>
-                  <span className="ml-2">{product.ubicacion}</span>
+                  <span className="ml-2 break-words break-all max-w-full">{product.ubicacion}</span>
                 </div>
 
                 <div className="flex items-center text-slate-300">
@@ -449,7 +449,7 @@ export default function ProductDetailModal({ product, onClose }) {
                     />
                   </svg>
                   <span className="font-medium">Vendedor:</span>
-                  <span className="ml-2">{product.nombreVendedor}</span>
+                  <span className="ml-2 break-words max-w-full">{product.nombreVendedor}</span>
                 </div>
 
                 <div className="flex items-center text-slate-300">
@@ -468,7 +468,7 @@ export default function ProductDetailModal({ product, onClose }) {
                     />
                   </svg>
                   <span className="font-medium">Categoría:</span>
-                  <span className="ml-2">{product.nombreCategoria}</span>
+                  <span className="ml-2 break-words max-w-full">{product.nombreCategoria}</span>
                 </div>
               </div>
 

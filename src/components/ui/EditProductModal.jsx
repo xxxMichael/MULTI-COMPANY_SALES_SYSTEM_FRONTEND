@@ -110,7 +110,6 @@ export default function EditProductModal({ product, onClose, onSave }) {
         return;
       }
 
-      // 1. Eliminar imágenes marcadas para borrar
       if (deletedImages.length > 0) {
         for (const img of deletedImages) {
           if (img.idFoto) {
@@ -268,6 +267,7 @@ export default function EditProductModal({ product, onClose, onSave }) {
               type="text"
               name="nombre"
               value={formData.nombre}
+              maxLength={70}
               onChange={handleChange}
               placeholder="Ej: Silla de oficina"
               required
@@ -285,6 +285,7 @@ export default function EditProductModal({ product, onClose, onSave }) {
               onChange={handleChange}
               placeholder="Describe tu producto..."
               rows={4}
+              maxLength={255}
               required
               className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all"
             />
@@ -316,6 +317,7 @@ export default function EditProductModal({ product, onClose, onSave }) {
                 name="ubicacion"
                 value={formData.ubicacion}
                 onChange={handleChange}
+                maxLength={70}
                 placeholder="Ej: Medellín"
                 required
               />
