@@ -162,7 +162,6 @@ export default function EditProductModal({ product, onClose, onSave }) {
     } finally {
       setLoading(false);
     }
-
   };
 
   return (
@@ -301,9 +300,14 @@ export default function EditProductModal({ product, onClose, onSave }) {
                 type="number"
                 name="precio"
                 value={formData.precio}
-                onChange={handleChange}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  if (value > 1000000) return; // evita valores mayores a 1 millón
+                  handleChange(e);
+                }}
                 placeholder="0.00"
                 min="0.1"
+                max="1000000"
                 step="0.01"
                 required
               />

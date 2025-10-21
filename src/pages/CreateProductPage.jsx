@@ -9,6 +9,16 @@ import { productsApi, myProductsApi } from "../api/products";
 import { categoriesApi } from "../api/products";
 import { getAuth } from "../state/auth";
 
+// Función para generar código alfanumérico aleatorio de 6 caracteres
+const generateRandomCode = () => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
 export default function CreateProductPage() {
   const [categories, setCategories] = useState([]);
   useState(() => {
@@ -27,7 +37,7 @@ export default function CreateProductPage() {
   const userId = auth?.user?.id;
 
   const [formData, setFormData] = useState({
-    codigo: "",
+    codigo: generateRandomCode(),
     nombre: "",
     descripcion: "",
     precio: "",
@@ -43,22 +53,29 @@ export default function CreateProductPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [resultModal, setResultModal] = useState({ open: false, success: false, message: "" });
+  const [resultModal, setResultModal] = useState({
+    open: false,
+    success: false,
+    message: "",
+  });
 
   // Bloquear scroll cuando el modal de resultado esté abierto
   useEffect(() => {
     if (resultModal.open) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [resultModal.open]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    // No actualizar el campo 'codigo' si intenta cambiarlo
+    if (name === "codigo") return;
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -136,13 +153,17 @@ export default function CreateProductPage() {
         response = await myProductsApi.create(productData);
       }
 
-  setSuccess(true);
-  // Mostrar modal de éxito
-  setResultModal({ open: true, success: true, message: "Producto creado exitosamente." });
+      setSuccess(true);
+      // Mostrar modal de éxito
+      setResultModal({
+        open: true,
+        success: true,
+        message: "Producto creado exitosamente.",
+      });
 
-  // Limpiar formulario
+      // Limpiar formulario
       setFormData({
-        codigo: "",
+        codigo: generateRandomCode(),
         nombre: "",
         descripcion: "",
         precio: "",
@@ -270,17 +291,19 @@ export default function CreateProductPage() {
                 </p>
               </div>
 
-              {/* Código (opcional) */}
+              {/* Código (generado automáticamente) */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Código (opcional)
+                  Código (generado automáticamente)
                 </label>
                 <Input
                   type="text"
                   name="codigo"
                   value={formData.codigo}
                   onChange={handleChange}
-                  placeholder="Ej: PROD-001"
+                  placeholder="Código generado automáticamente"
+                  className="bg-gray-700 cursor-not-allowed opacity-70"
+                  readOnly
                 />
               </div>
 
@@ -327,8 +350,13 @@ export default function CreateProductPage() {
                     type="number"
                     name="precio"
                     value={formData.precio}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (value > 1000000) return; // evita valores mayores a 1 millón
+                      handleChange(e);
+                    }}
                     placeholder="0.00"
+                    max="1000000"
                     min="0.1"
                     step="0.01"
                     required
@@ -437,14 +465,18 @@ export default function CreateProductPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative bg-slate-900 rounded-2xl border border-slate-800/60 p-6 max-w-md w-full mx-4 shadow-2xl z-10">
-            <h3 className={`text-lg font-semibold mb-2 ${resultModal.success ? 'text-green-400' : 'text-red-400'}`}>
-              {resultModal.success ? 'Éxito' : 'Error'}
+            <h3
+              className={`text-lg font-semibold mb-2 ${
+                resultModal.success ? "text-green-400" : "text-red-400"
+              }`}
+            >
+              {resultModal.success ? "Éxito" : "Error"}
             </h3>
             <p className="text-slate-200 mb-4">{resultModal.message}</p>
             <div className="flex justify-end">
               <button
                 onClick={() => {
-                  setResultModal({ open: false, success: false, message: '' });
+                  setResultModal({ open: false, success: false, message: "" });
                 }}
                 className="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200"
               >
@@ -457,4 +489,3 @@ export default function CreateProductPage() {
     </div>
   );
 }
-
