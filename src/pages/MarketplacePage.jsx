@@ -22,6 +22,9 @@ export default function MarketplacePage() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
+  // Tamaño de página (productos por página)
+  const [pageSize, setPageSize] = useState(32);
+
   const [filters, setFilters] = useState({
     searchTerm: "",
     tipo: "",
@@ -45,7 +48,7 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     loadProducts();
-  }, [currentPage, sortBy, filters, showInterests]);
+  }, [currentPage, sortBy, filters, showInterests, pageSize]);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -62,7 +65,7 @@ export default function MarketplacePage() {
         }
         response = await interestApi.getUserInterests(auth.user.id, {
           page: currentPage,
-          size: 12,
+          size: pageSize,
           sort: sortBy,
         });
 
@@ -100,12 +103,12 @@ export default function MarketplacePage() {
           ? await productsApi.filter({
               ...filters,
               page: currentPage,
-              size: 12,
+              size: pageSize,
               sort: sortBy,
             })
           : await productsApi.getAll({
               page: currentPage,
-              size: 12,
+              size: pageSize,
               sort: sortBy,
             });
 
@@ -228,6 +231,8 @@ export default function MarketplacePage() {
                   <option value="nombre,asc">A-Z</option>
                   <option value="nombre,desc">Z-A</option>
                 </select>
+
+                {/* pageSize por defecto = 32 (sin selector) */}
               </div>
             </div>
 

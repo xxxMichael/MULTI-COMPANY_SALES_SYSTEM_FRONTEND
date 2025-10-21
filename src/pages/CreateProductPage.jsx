@@ -1,5 +1,5 @@
 // src/pages/CreateProductPage.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Upload, Trash2, Plus } from "lucide-react";
 import Header from "../components/ui/Header";
@@ -43,6 +43,19 @@ export default function CreateProductPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [resultModal, setResultModal] = useState({ open: false, success: false, message: "" });
+
+  // Bloquear scroll cuando el modal de resultado esté abierto
+  useEffect(() => {
+    if (resultModal.open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [resultModal.open]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -62,7 +75,9 @@ export default function CreateProductPage() {
     }
 
     // Validar tamaño (10MB por archivo)
-    const invalidFiles = newFiles.filter((file) => file.size > 10 * 1024 * 1024);
+    const invalidFiles = newFiles.filter(
+      (file) => file.size > 10 * 1024 * 1024
+    );
     if (invalidFiles.length > 0) {
       setError("Algunas imágenes superan el tamaño máximo de 10MB");
       return;
@@ -121,9 +136,11 @@ export default function CreateProductPage() {
         response = await myProductsApi.create(productData);
       }
 
-      setSuccess(true);
-      
-      // Limpiar formulario
+  setSuccess(true);
+  // Mostrar modal de éxito
+  setResultModal({ open: true, success: true, message: "Producto creado exitosamente." });
+
+  // Limpiar formulario
       setFormData({
         codigo: "",
         nombre: "",
@@ -137,17 +154,18 @@ export default function CreateProductPage() {
       });
       setFiles([]);
       setPreviewUrls([]);
-
       // Redireccionar después de 2 segundos
       setTimeout(() => {
         navigate("/my-products");
       }, 2000);
     } catch (err) {
       console.error("Error al crear producto:", err);
-      setError(
+      const errMsg =
         err.response?.data?.error ||
-        "Error al crear el producto. Por favor intenta de nuevo."
-      );
+        err.response?.data?.mensaje ||
+        "Error al crear el producto. Por favor intenta de nuevo.";
+      setError(errMsg);
+      setResultModal({ open: true, success: false, message: errMsg });
     } finally {
       setLoading(false);
     }
@@ -178,7 +196,7 @@ export default function CreateProductPage() {
         {/* Form container */}
         <div className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/10 to-violet-500/10 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-300 pointer-events-none" />
-          
+
           <div className="relative rounded-2xl border border-slate-800/50 bg-slate-900/90 backdrop-blur-xl shadow-2xl p-8">
             <h1 className="text-3xl font-bold text-slate-50 mb-2">
               Crear Nuevo Producto
@@ -277,6 +295,7 @@ export default function CreateProductPage() {
                   value={formData.nombre}
                   onChange={handleChange}
                   placeholder="Ej: Silla de oficina ergonómica"
+                  maxLength={70}
                   required
                 />
               </div>
@@ -292,6 +311,7 @@ export default function CreateProductPage() {
                   onChange={handleChange}
                   placeholder="Describe detalladamente tu producto o servicio..."
                   rows={5}
+                  maxLength={255}
                   required
                   className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all resize-none"
                 />
@@ -324,6 +344,7 @@ export default function CreateProductPage() {
                     value={formData.ubicacion}
                     onChange={handleChange}
                     placeholder="Ej: Medellín"
+                    maxLength={70}
                     required
                   />
                 </div>
@@ -345,23 +366,29 @@ export default function CreateProductPage() {
                   <option value="SERVICIO">Servicio</option>
                 </select>
               </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Categoría *</label>
-                  <select
-                    name="idCategoria"
-                    value={formData.idCategoria}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all"
-                  >
-                    {categories.length === 0 && (
-                      <option value="" disabled>Cargando categorías...</option>
-                    )}
-                    {categories.map((cat) => (
-                      <option key={cat.idCategoria} value={cat.idCategoria}>{cat.nombre}</option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Categoría *
+                </label>
+                <select
+                  name="idCategoria"
+                  value={formData.idCategoria}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all"
+                >
+                  {categories.length === 0 && (
+                    <option value="" disabled>
+                      Cargando categorías...
+                    </option>
+                  )}
+                  {categories.map((cat) => (
+                    <option key={cat.idCategoria} value={cat.idCategoria}>
+                      {cat.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               {/* Disponibilidad */}
               <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-800/30 border border-slate-700/50">
@@ -373,7 +400,10 @@ export default function CreateProductPage() {
                   onChange={handleChange}
                   className="w-5 h-5 rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-2 focus:ring-blue-500/50"
                 />
-                <label htmlFor="disponibilidad" className="text-sm text-slate-300">
+                <label
+                  htmlFor="disponibilidad"
+                  className="text-sm text-slate-300"
+                >
                   Marcar como disponible inmediatamente
                 </label>
               </div>
@@ -401,6 +431,30 @@ export default function CreateProductPage() {
           </div>
         </div>
       </div>
+
+      {/* Result modal (centered) */}
+      {resultModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="relative bg-slate-900 rounded-2xl border border-slate-800/60 p-6 max-w-md w-full mx-4 shadow-2xl z-10">
+            <h3 className={`text-lg font-semibold mb-2 ${resultModal.success ? 'text-green-400' : 'text-red-400'}`}>
+              {resultModal.success ? 'Éxito' : 'Error'}
+            </h3>
+            <p className="text-slate-200 mb-4">{resultModal.message}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setResultModal({ open: false, success: false, message: '' });
+                }}
+                className="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
