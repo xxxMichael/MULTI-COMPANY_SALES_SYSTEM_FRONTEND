@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { getAuth } from '../state/auth';
 import { chatApi } from '../api/chat';
 import webSocketService from '../api/websocket';
+import Header from '../components/ui/Header';
 import ChatList from '../components/chat/ChatList';
 import ChatWindow from '../components/chat/ChatWindow';
 import NewChatModal from '../components/chat/NewChatModal';
@@ -122,38 +123,68 @@ export default function ChatPage() {
 
   if (!auth?.user) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-center text-slate-400">
-          <p className="text-lg mb-4">Necesitas iniciar sesión para acceder al chat</p>
-          <a 
-            href="/login" 
-            className="text-blue-400 hover:text-blue-300 underline"
-          >
-            Ir a login
-          </a>
+      <div className="min-h-screen bg-slate-900">
+        <Header />
+        <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 64px)' }}>
+          <div className="text-center text-slate-400">
+            <p className="text-lg mb-4">Necesitas iniciar sesión para acceder al chat</p>
+            <a 
+              href="/login" 
+              className="text-blue-400 hover:text-blue-300 underline"
+            >
+              Ir a login
+            </a>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      {/* Status de conexión */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      {/* Efectos de fondo decorativos */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl" />
+      </div>
+
+      {/* Header */}
+      <Header />
+      
+      {/* Status de conexión mejorado */}
       {connectionStatus !== 'connected' && (
-        <div className={`fixed top-0 left-0 right-0 z-50 p-2 text-center text-sm ${
+        <div className={`fixed top-16 left-0 right-0 z-40 p-3 text-center text-sm font-medium shadow-lg backdrop-blur-sm ${
           connectionStatus === 'connecting' 
-            ? 'bg-yellow-600' 
+            ? 'bg-yellow-500/90 text-yellow-100 border-b border-yellow-400/20' 
             : connectionStatus === 'error'
-            ? 'bg-red-600'
-            : 'bg-slate-600'
+            ? 'bg-red-500/90 text-red-100 border-b border-red-400/20'
+            : 'bg-slate-600/90 text-slate-100 border-b border-slate-400/20'
         }`}>
-          {connectionStatus === 'connecting' && 'Conectando al chat...'}
-          {connectionStatus === 'error' && 'Error de conexión - Chat no disponible'}
-          {connectionStatus === 'disconnected' && 'Desconectado del chat'}
+          <div className="flex items-center justify-center gap-2">
+            {connectionStatus === 'connecting' && (
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+              </svg>
+            )}
+            {connectionStatus === 'connecting' && 'Conectando al chat...'}
+            {connectionStatus === 'error' && (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                Error de conexión - Chat no disponible
+              </>
+            )}
+            {connectionStatus === 'disconnected' && 'Desconectado del chat'}
+          </div>
         </div>
       )}
 
-      <div className={`flex h-screen ${connectionStatus !== 'connected' ? 'pt-10' : ''}`}>
+      <div 
+        className={`relative flex ${connectionStatus !== 'connected' ? 'pt-12' : ''}`} 
+        style={{ height: 'calc(100vh - 64px)' }}
+      >
         {/* Lista de chats - oculta en mobile cuando hay chat seleccionado */}
         <div className={`${isMobileView && selectedChat ? 'hidden md:flex' : 'flex'}`}>
           <ChatList
@@ -176,28 +207,40 @@ export default function ChatPage() {
 
         {/* Placeholder cuando no hay chat seleccionado en desktop */}
         {!selectedChat && (
-          <div className="hidden md:flex flex-1 bg-slate-900 items-center justify-center">
-            <div className="text-center text-slate-400">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-16 w-16 mx-auto mb-4 text-slate-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-              <p className="text-lg font-medium mb-2">Bienvenido al Chat</p>
-              <p className="text-sm mb-4">Selecciona una conversación o inicia una nueva</p>
+          <div className="hidden md:flex flex-1 bg-slate-900/50 backdrop-blur-xl items-center justify-center border-l border-slate-800/50">
+            <div className="text-center text-slate-400 max-w-md px-8">
+              <div className="relative mb-8">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-violet-500/20 rounded-full blur-2xl"></div>
+                <div className="relative bg-gradient-to-br from-blue-600/20 to-violet-600/20 rounded-full p-8 backdrop-blur-sm border border-blue-500/20">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-16 w-16 mx-auto text-blue-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              
+              <h3 className="text-2xl font-bold text-slate-50 mb-3">¡Bienvenido al Chat!</h3>
+              <p className="text-slate-400 mb-6 leading-relaxed">
+                Selecciona una conversación de la lista o inicia un nuevo chat para comenzar a comunicarte con otros usuarios
+              </p>
+              
               <button
                 onClick={handleNewChat}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                className="group px-6 py-3 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-blue-500/25 flex items-center gap-2 mx-auto"
               >
+                <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
                 Nuevo Chat
               </button>
             </div>
