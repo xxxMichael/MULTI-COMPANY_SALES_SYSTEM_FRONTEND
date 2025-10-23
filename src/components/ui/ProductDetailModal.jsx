@@ -4,6 +4,7 @@ import { useAtom } from "jotai";
 import { productsApi, interestApi } from "../../api/products";
 import { getAuth } from "../../state/auth";
 import { favoritesStateAtom, favoritesCountAtom } from "../../state/favorites";
+import ChatButton from "../chat/ChatButton";
 
 export default function ProductDetailModal({ product, onClose }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -472,33 +473,45 @@ export default function ProductDetailModal({ product, onClose }) {
                 </div>
               </div>
 
-              {/* Botón de favoritos */}
-              <button
-                onClick={toggleInterest}
-                disabled={loading}
-                className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
-                  isInterested
-                    ? "bg-red-500 hover:bg-red-600 text-white"
-                    : "bg-slate-800/60 hover:bg-slate-800 text-slate-100"
-                } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill={isInterested ? "currentColor" : "none"}
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
+              {/* Botones de acción */}
+              <div className="space-y-3">
+                {/* Botón de favoritos */}
+                <button
+                  onClick={toggleInterest}
+                  disabled={loading}
+                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                    isInterested
+                      ? "bg-red-500 hover:bg-red-600 text-white"
+                      : "bg-slate-800/60 hover:bg-slate-800 text-slate-100"
+                  } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill={isInterested ? "currentColor" : "none"}
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                  {isInterested ? "Quitar de favoritos" : "Agregar a favoritos"}
+                  {interestCount > 0 && <span>({interestCount})</span>}
+                </button>
+
+                {/* Botón de chat con el vendedor */}
+                {(auth?.user?.idUsuario || auth?.user?.id) && product.idVendedor && (auth.user.idUsuario || auth.user.id) !== product.idVendedor && (
+                  <ChatButton
+                    targetUserId={product.idVendedor}
+                    targetUserName={product.nombreVendedor}
+                    className="w-full"
                   />
-                </svg>
-                {isInterested ? "Quitar de favoritos" : "Agregar a favoritos"}
-                {interestCount > 0 && <span>({interestCount})</span>}
-              </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

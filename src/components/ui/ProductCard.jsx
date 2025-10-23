@@ -5,6 +5,7 @@ import { Flag } from "lucide-react";
 import { productsApi, interestApi } from "../../api/products";
 import { getAuth } from "../../state/auth";
 import { favoritesStateAtom, favoritesCountAtom } from "../../state/favorites";
+import ChatButton from "../chat/ChatButton";
 
 export default function ProductCard({ product, onProductClick }) {
   const [favoritesState, setFavoritesState] = useAtom(favoritesStateAtom);
@@ -310,22 +311,44 @@ export default function ProductCard({ product, onProductClick }) {
             {product.ubicacion}
           </div>
 
-          <div className="flex items-center text-slate-400 text-xs">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 mr-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          <div className="flex items-center justify-between text-slate-400 text-xs mb-3">
+            <div className="flex items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+              {product.nombreVendedor}
+            </div>
+          </div>
+
+          {/* Botones de acción */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => onProductClick(product)}
+              className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white text-sm rounded-lg transition-colors font-medium"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              Ver detalles
+            </button>
+            
+            {/* Solo mostrar botón de chat si no es el propio producto del usuario */}
+            {(auth?.user?.idUsuario || auth?.user?.id) && product.idVendedor && (auth.user.idUsuario || auth.user.id) !== product.idVendedor && (
+              <ChatButton
+                targetUserId={product.idVendedor}
+                targetUserName={product.nombreVendedor}
+                variant="icon"
+                className="flex-shrink-0"
               />
-            </svg>
-            {product.nombreVendedor}
+            )}
           </div>
         </div>
       </div>

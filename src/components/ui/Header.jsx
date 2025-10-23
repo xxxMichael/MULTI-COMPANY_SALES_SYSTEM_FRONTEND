@@ -2,12 +2,14 @@
 import { useNavigate } from "react-router-dom";
 import { getAuth, clearAuth } from "../../state/auth";
 import { useState, useRef, useEffect } from "react";
+import { useChatNotifications } from "../../hooks/useChatNotifications";
 
 export default function Header() {
   const navigate = useNavigate();
   const auth = getAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef();
+  const { unreadCount } = useChatNotifications();
 
   const handleLogout = () => {
     clearAuth();
@@ -86,6 +88,23 @@ export default function Header() {
                 Mis Productos
               </a>
             )}
+            {auth?.user && (
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate("/chat");
+                }}
+                className="text-slate-300 hover:text-slate-50 font-medium transition-colors relative"
+              >
+                Chat
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full min-w-[20px] h-[20px]">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </a>
+            )}
             <a
               href="#"
               className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
@@ -158,6 +177,20 @@ export default function Header() {
                       className="text-left px-4 py-2 rounded hover:bg-slate-700 text-slate-200"
                     >
                       Mis productos
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate('/chat');
+                      }}
+                      className="text-left px-4 py-2 rounded hover:bg-slate-700 text-slate-200 flex items-center justify-between"
+                    >
+                      <span>Chat</span>
+                      {unreadCount > 0 && (
+                        <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full min-w-[18px] h-[18px]">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
                     </button>
                     <button
                       onClick={() => {
