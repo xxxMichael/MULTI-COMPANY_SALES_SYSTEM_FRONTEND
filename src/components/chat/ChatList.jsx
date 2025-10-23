@@ -5,7 +5,6 @@ export default function ChatList({
   currentUserId, 
   selectedChatId, 
   onChatSelect, 
-  onNewChat, 
   refreshTrigger 
 }) {
   const [chats, setChats] = useState([]);
@@ -166,16 +165,6 @@ export default function ChatList({
               </div>
               
               <h3 className="text-lg font-semibold text-slate-300 mb-2">No tienes chats aún</h3>
-              <p className="text-sm text-slate-500 mb-4 leading-relaxed">
-                Inicia una conversación desde el marketplace o crea un nuevo chat
-              </p>
-              
-              <button
-                onClick={onNewChat}
-                className="px-4 py-2 bg-gradient-to-r from-blue-600/80 to-violet-600/80 hover:from-blue-500 hover:to-violet-500 text-white text-sm rounded-lg font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg"
-              >
-                Iniciar conversación
-              </button>
             </div>
           </div>
         ) : (

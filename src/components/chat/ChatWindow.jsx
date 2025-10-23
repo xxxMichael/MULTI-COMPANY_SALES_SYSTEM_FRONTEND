@@ -163,42 +163,33 @@ export default function ChatWindow({
   return (
     <div className="flex-1 bg-slate-900/50 backdrop-blur-xl flex flex-col border-l border-slate-800/50 h-full">
       {/* Header del chat mejorado - ESTÁTICO */}
-      <div className="bg-gradient-to-r from-slate-800/80 to-slate-800/60 backdrop-blur-xl border-b border-slate-700/50 p-5 flex items-center justify-between shadow-lg sticky top-0 z-20">
+      <div className="bg-gradient-to-r from-slate-800/80 to-slate-800/60 backdrop-blur-xl border-b border-slate-700/50 p-3 flex items-center justify-between shadow-lg sticky top-0 z-20">
         <div className="flex items-center space-x-4">
-          {/* Avatar con estado */}
+          {/* Avatar sin estado */}
           <div className="relative">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg ring-2 ring-blue-400/20">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg ring-2 ring-blue-400/20">
               <span className="text-white font-bold text-sm">
                 {otherUser?.nombre?.charAt(0).toUpperCase() || '?'}
               </span>
             </div>
-            {/* Indicador online */}
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-slate-800 rounded-full animate-pulse"></div>
           </div>
           
           <div>
-            <h3 className="text-xl font-bold text-slate-50 mb-1">
+            <h3 className="text-lg font-bold text-slate-50 mb-0.5">
               {otherUser?.nombre || 'Usuario desconocido'}
             </h3>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <p className="text-sm text-green-400 font-medium">En línea</p>
+              <p className="text-xs text-green-400 font-medium">En línea</p>
             </div>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
-          {/* Botones de acción adicionales */}
-          <button className="p-2.5 text-slate-400 hover:text-slate-50 hover:bg-slate-700/50 rounded-xl transition-all duration-300 hover:scale-110">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </button>
-          
           {/* Botón de cerrar - siempre visible */}
           <button
             onClick={() => onClose && onClose()}
-            className="p-2.5 text-slate-400 hover:bg-red-500/20 hover:text-red-400 rounded-xl transition-all duration-300 hover:scale-110"
+            className="p-2 text-slate-400 hover:bg-red-500/20 hover:text-red-400 rounded-xl transition-all duration-300 hover:scale-110"
             title="Cerrar chat"
           >
             <svg
@@ -283,7 +274,7 @@ export default function ChatWindow({
                   )}
                   
                   <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}>
-                    <div className={`relative max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg transition-all duration-300 group-hover:shadow-xl ${
+                    <div className={`relative max-w-xs lg:max-w-md px-4 py-2 rounded-2xl shadow-lg transition-all duration-300 group-hover:shadow-xl ${
                       isOwn
                         ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-md'
                         : 'bg-gradient-to-br from-slate-700 to-slate-800 text-slate-50 rounded-bl-md border border-slate-600/50'
@@ -308,22 +299,6 @@ export default function ChatWindow({
                             minute: '2-digit' 
                           })}
                         </span>
-                        
-                        {isOwn && (
-                          <div className="flex items-center ml-2">
-                            <span className={`transition-colors ${message.leido ? 'text-blue-200' : 'text-blue-300'}`}>
-                              {message.leido ? (
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              ) : (
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>

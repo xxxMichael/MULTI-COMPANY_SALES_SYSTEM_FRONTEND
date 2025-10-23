@@ -6,13 +6,11 @@ import webSocketService from '../api/websocket';
 import Header from '../components/ui/Header';
 import ChatList from '../components/chat/ChatList';
 import ChatWindow from '../components/chat/ChatWindow';
-import NewChatModal from '../components/chat/NewChatModal';
 
 export default function ChatPage() {
   const auth = getAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedChat, setSelectedChat] = useState(null);
-  const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [isMobileView, setIsMobileView] = useState(false);
@@ -106,10 +104,6 @@ export default function ChatPage() {
     setIsMobileView(true);
   };
 
-  const handleNewChat = () => {
-    setShowNewChatModal(true);
-  };
-
   const handleChatCreated = (newChat) => {
     setSelectedChat(newChat);
     setRefreshTrigger(prev => prev + 1);
@@ -196,7 +190,6 @@ export default function ChatPage() {
             currentUserId={auth.user.idUsuario || auth.user.id}
             selectedChatId={selectedChat?.idChat}
             onChatSelect={handleChatSelect}
-            onNewChat={handleNewChat}
             refreshTrigger={refreshTrigger}
           />
         </div>
@@ -239,31 +232,15 @@ export default function ChatPage() {
                 
                 <h3 className="text-3xl font-bold text-slate-50 mb-4">¡Bienvenido al Chat!</h3>
                 <p className="text-slate-400 mb-8 leading-relaxed text-lg">
-                  Selecciona una conversación de la lista o inicia un nuevo chat para comenzar a comunicarte con otros usuarios
+                  Selecciona una conversación de la lista para comunicarte con otros usuarios
                 </p>
                 
-                <button
-                  onClick={handleNewChat}
-                  className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-blue-500/25 flex items-center gap-3 mx-auto text-lg"
-                >
-                  <svg className="w-6 h-6 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Nuevo Chat
-                </button>
+               
               </div>
             </div>
           )}
         </div>
       </div>
-
-      {/* Modal para nuevo chat */}
-      <NewChatModal
-        isOpen={showNewChatModal}
-        onClose={() => setShowNewChatModal(false)}
-        currentUserId={auth.user.idUsuario || auth.user.id}
-        onChatCreated={handleChatCreated}
-      />
     </div>
   );
 }
