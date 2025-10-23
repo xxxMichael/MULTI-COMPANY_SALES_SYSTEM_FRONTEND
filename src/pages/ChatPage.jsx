@@ -121,6 +121,11 @@ export default function ChatPage() {
     setSelectedChat(null);
   };
 
+  const handleCloseChat = () => {
+    setSelectedChat(null);
+    setIsMobileView(false);
+  };
+
   if (!auth?.user) {
     return (
       <div className="min-h-screen bg-slate-900">
@@ -185,7 +190,7 @@ export default function ChatPage() {
         className={`relative flex ${connectionStatus !== 'connected' ? 'pt-12' : ''}`} 
         style={{ height: 'calc(100vh - 64px)' }}
       >
-        {/* Lista de chats - oculta en mobile cuando hay chat seleccionado */}
+        {/* Lista de chats - siempre visible */}
         <div className={`${isMobileView && selectedChat ? 'hidden md:flex' : 'flex'}`}>
           <ChatList
             currentUserId={auth.user.idUsuario || auth.user.id}
@@ -196,56 +201,60 @@ export default function ChatPage() {
           />
         </div>
 
-        {/* Ventana de chat */}
+        {/* Ventana de chat o empty state */}
         <div className={`flex-1 ${!selectedChat && !isMobileView ? 'hidden md:block' : ''}`}>
-          <ChatWindow
-            chat={selectedChat}
-            currentUserId={auth.user.idUsuario || auth.user.id}
-            onClose={handleCloseMobileChat}
-          />
-        </div>
-
-        {/* Placeholder cuando no hay chat seleccionado en desktop */}
-        {!selectedChat && (
-          <div className="hidden md:flex flex-1 bg-slate-900/50 backdrop-blur-xl items-center justify-center border-l border-slate-800/50">
-            <div className="text-center text-slate-400 max-w-md px-8">
-              <div className="relative mb-8">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-violet-500/20 rounded-full blur-2xl"></div>
-                <div className="relative bg-gradient-to-br from-blue-600/20 to-violet-600/20 rounded-full p-8 backdrop-blur-sm border border-blue-500/20">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-16 w-16 mx-auto text-blue-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    />
-                  </svg>
+          {selectedChat ? (
+            <ChatWindow
+              chat={selectedChat}
+              currentUserId={auth.user.idUsuario || auth.user.id}
+              onClose={handleCloseChat}
+            />
+          ) : (
+            <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-xl flex items-center justify-center relative overflow-hidden h-full border-l border-slate-800/50">
+              {/* Efectos de fondo */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-violet-500/5"></div>
+              <div className="absolute top-1/4 left-1/3 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+              <div className="absolute bottom-1/3 right-1/4 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl"></div>
+              
+              <div className="text-center text-slate-400 max-w-lg px-8 relative z-10">
+                <div className="relative mb-8">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-violet-500/20 rounded-full blur-2xl"></div>
+                  <div className="relative bg-gradient-to-br from-blue-600/20 to-violet-600/20 rounded-full p-8 backdrop-blur-sm border border-blue-500/20">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-16 w-16 mx-auto text-blue-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                      />
+                    </svg>
+                  </div>
                 </div>
+                
+                <h3 className="text-3xl font-bold text-slate-50 mb-4">¡Bienvenido al Chat!</h3>
+                <p className="text-slate-400 mb-8 leading-relaxed text-lg">
+                  Selecciona una conversación de la lista o inicia un nuevo chat para comenzar a comunicarte con otros usuarios
+                </p>
+                
+                <button
+                  onClick={handleNewChat}
+                  className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-blue-500/25 flex items-center gap-3 mx-auto text-lg"
+                >
+                  <svg className="w-6 h-6 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Nuevo Chat
+                </button>
               </div>
-              
-              <h3 className="text-2xl font-bold text-slate-50 mb-3">¡Bienvenido al Chat!</h3>
-              <p className="text-slate-400 mb-6 leading-relaxed">
-                Selecciona una conversación de la lista o inicia un nuevo chat para comenzar a comunicarte con otros usuarios
-              </p>
-              
-              <button
-                onClick={handleNewChat}
-                className="group px-6 py-3 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-blue-500/25 flex items-center gap-2 mx-auto"
-              >
-                <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Nuevo Chat
-              </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Modal para nuevo chat */}
