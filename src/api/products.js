@@ -31,6 +31,7 @@ export const productsApi = {
     const {
       minPrice,
       maxPrice,
+      idCategoria,
       tipo,
       searchTerm,
       ubicacion,
@@ -44,6 +45,7 @@ export const productsApi = {
       params: {
         minPrice,
         maxPrice,
+        idCategoria,
         tipo,
         searchTerm,
         ubicacion,

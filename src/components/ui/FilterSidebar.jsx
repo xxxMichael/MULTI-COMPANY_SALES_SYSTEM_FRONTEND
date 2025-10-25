@@ -1,7 +1,7 @@
 // Barra lateral de filtros
 import { useState } from "react";
 
-export default function FilterSidebar({ filters, onFilterChange, onApplyFilters }) {
+export default function FilterSidebar({ filters, onFilterChange, onApplyFilters, categories = [] }) {
   const [localFilters, setLocalFilters] = useState(filters);
 
   const handleChange = (key, value) => {
@@ -19,6 +19,7 @@ export default function FilterSidebar({ filters, onFilterChange, onApplyFilters 
     const cleared = {
       searchTerm: "",
       tipo: "",
+      idCategoria: "",
       ubicacion: "",
       minPrice: 0,
       maxPrice: 10000,
@@ -71,6 +72,25 @@ export default function FilterSidebar({ filters, onFilterChange, onApplyFilters 
             <option value="">Todos</option>
             <option value="PRODUCTO">Producto</option>
             <option value="SERVICIO">Servicio</option>
+          </select>
+        </div>
+
+        {/* Categoría */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Categoría
+          </label>
+          <select
+            value={localFilters.idCategoria || ""}
+            onChange={(e) => handleChange("idCategoria", e.target.value)}
+            className="w-full px-4 py-2 bg-slate-800/60 border border-slate-700 text-slate-100 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+          >
+            <option value="">Todas</option>
+            {categories.map((cat) => (
+              <option key={cat.idCategoria ?? cat.id} value={cat.idCategoria ?? cat.id}>
+                {cat.nombre}
+              </option>
+            ))}
           </select>
         </div>
 
