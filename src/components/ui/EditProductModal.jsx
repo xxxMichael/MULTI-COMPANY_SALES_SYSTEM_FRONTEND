@@ -12,6 +12,7 @@ export default function EditProductModal({ product, onClose, onSave }) {
     ubicacion: "",
     disponibilidad: true,
     tipo: "PRODUCTO",
+    horario: "",
     idVendedor: 0,
     idCategoria: 1,
   });
@@ -34,8 +35,9 @@ export default function EditProductModal({ product, onClose, onSave }) {
         ubicacion: product.ubicacion || "",
         disponibilidad: product.disponibilidad ?? true,
         tipo: product.tipo || "PRODUCTO",
-        idVendedor: product.idVendedor || 0,
-        idCategoria: product.idCategoria || 1,
+          horario: product.horario || "",
+          idVendedor: product.idVendedor || 0,
+          idCategoria: product.idCategoria || 1,
       });
 
       if (product.fotos && product.fotos.length > 0) {
@@ -140,11 +142,14 @@ export default function EditProductModal({ product, onClose, onSave }) {
       // 3. Actualizar datos del producto
       let response;
       try {
-        response = await myProductsApi.update(product.idProducto, {
+        const payload = {
           ...formData,
           precio: parseFloat(formData.precio),
           idCategoria: formData.idCategoria,
-        });
+        };
+        if (payload.tipo !== "SERVICIO") delete payload.horario;
+
+        response = await myProductsApi.update(product.idProducto, payload);
       } catch (err) {
         console.error("Error al actualizar producto:", err);
         setError(
@@ -256,6 +261,22 @@ export default function EditProductModal({ product, onClose, onSave }) {
               </label>
             )}
           </div>
+
+          {/* Horario (solo para servicios) */}
+          {formData.tipo === "SERVICIO" && (
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Horario (opcional)
+              </label>
+              <Input
+                type="text"
+                name="horario"
+                value={formData.horario}
+                onChange={handleChange}
+                placeholder="Ej: Lun-Vie 09:00-18:00"
+              />
+            </div>
+          )}
 
           {/* Nombre */}
           <div>

@@ -9,16 +9,6 @@ import { productsApi, myProductsApi } from "../api/products";
 import { categoriesApi } from "../api/products";
 import { getAuth } from "../state/auth";
 
-// Función para generar código alfanumérico aleatorio de 6 caracteres
-const generateRandomCode = () => {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let result = "";
-  for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-};
-
 export default function CreateProductPage() {
   const [categories, setCategories] = useState([]);
   useState(() => {
@@ -37,13 +27,13 @@ export default function CreateProductPage() {
   const userId = auth?.user?.id;
 
   const [formData, setFormData] = useState({
-    codigo: generateRandomCode(),
     nombre: "",
     descripcion: "",
     precio: "",
     ubicacion: "",
     disponibilidad: true,
     tipo: "PRODUCTO",
+    horario: "",
     idVendedor: userId || 0,
     idCategoria: 1,
   });
@@ -144,6 +134,11 @@ export default function CreateProductPage() {
         idVendedor: userId,
       };
 
+      // No enviar 'horario' si no es un servicio
+      if (productData.tipo !== "SERVICIO") {
+        delete productData.horario;
+      }
+
       let response;
       if (files.length > 0) {
         // Crear con imágenes
@@ -158,18 +153,21 @@ export default function CreateProductPage() {
       setResultModal({
         open: true,
         success: true,
-        message: "Producto creado exitosamente.",
+        message:
+          productData.tipo === "PRODUCTO"
+            ? "Producto creado exitosamente."
+            : "Servicio creado exitosamente.",
       });
 
       // Limpiar formulario
       setFormData({
-        codigo: generateRandomCode(),
         nombre: "",
         descripcion: "",
         precio: "",
         ubicacion: "",
         disponibilidad: true,
         tipo: "PRODUCTO",
+        horario: "",
         idVendedor: userId || 0,
         idCategoria: 1,
       });
@@ -291,20 +289,8 @@ export default function CreateProductPage() {
                 </p>
               </div>
 
-              {/* Código (generado automáticamente) */}
+              {/* Información sobre el código */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Código (generado automáticamente)
-                </label>
-                <Input
-                  type="text"
-                  name="codigo"
-                  value={formData.codigo}
-                  onChange={handleChange}
-                  placeholder="Código generado automáticamente"
-                  className="bg-gray-700 cursor-not-allowed opacity-70"
-                  readOnly
-                />
               </div>
 
               {/* Nombre */}
@@ -394,6 +380,22 @@ export default function CreateProductPage() {
                   <option value="SERVICIO">Servicio</option>
                 </select>
               </div>
+              {/* Horario (solo para servicios) */}
+              {formData.tipo === "SERVICIO" && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Horario (opcional)
+                  </label>
+                  <Input
+                    type="text"
+                    name="horario"
+                    value={formData.horario}
+                    onChange={handleChange}
+                    placeholder="Ej: Lun-Vie 09:00-18:00"
+                    maxLength={100}
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Categoría *
