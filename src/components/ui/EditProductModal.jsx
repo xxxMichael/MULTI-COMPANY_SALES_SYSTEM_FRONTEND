@@ -12,6 +12,7 @@ export default function EditProductModal({ product, onClose, onSave }) {
     ubicacion: "",
     disponibilidad: true,
     tipo: "PRODUCTO",
+    horario: "",
     idVendedor: 0,
     idCategoria: 1,
   });
@@ -34,6 +35,7 @@ export default function EditProductModal({ product, onClose, onSave }) {
         ubicacion: product.ubicacion || "",
         disponibilidad: product.disponibilidad ?? true,
         tipo: product.tipo || "PRODUCTO",
+        horario: product.horario || "",
         idVendedor: product.idVendedor || 0,
         idCategoria: product.idCategoria || 1,
       });
@@ -140,11 +142,14 @@ export default function EditProductModal({ product, onClose, onSave }) {
       // 3. Actualizar datos del producto
       let response;
       try {
-        response = await myProductsApi.update(product.idProducto, {
+        const payload = {
           ...formData,
           precio: parseFloat(formData.precio),
           idCategoria: formData.idCategoria,
-        });
+        };
+        if (payload.tipo !== "SERVICIO") delete payload.horario;
+
+        response = await myProductsApi.update(product.idProducto, payload);
       } catch (err) {
         console.error("Error al actualizar producto:", err);
         setError(
@@ -162,7 +167,6 @@ export default function EditProductModal({ product, onClose, onSave }) {
     } finally {
       setLoading(false);
     }
-
   };
 
   return (
@@ -258,6 +262,23 @@ export default function EditProductModal({ product, onClose, onSave }) {
             )}
           </div>
 
+          {/* Horario (solo para servicios) */}
+          {formData.tipo === "SERVICIO" && (
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Horario (opcional)
+              </label>
+              <Input
+                type="text"
+                name="horario"
+                value={formData.horario}
+                onChange={handleChange}
+                placeholder="Ej: Lun-Vie 09:00-18:00"
+                maxLength={100}
+              />
+            </div>
+          )}
+
           {/* Nombre */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -301,9 +322,14 @@ export default function EditProductModal({ product, onClose, onSave }) {
                 type="number"
                 name="precio"
                 value={formData.precio}
-                onChange={handleChange}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  if (value > 1000000) return; // evita valores mayores a 1 millón
+                  handleChange(e);
+                }}
                 placeholder="0.00"
                 min="0.1"
+                max="1000000"
                 step="0.01"
                 required
               />

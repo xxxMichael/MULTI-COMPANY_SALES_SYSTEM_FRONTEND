@@ -1,7 +1,7 @@
 // Página principal del marketplace
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { productsApi, interestApi } from "../api/products";
+import { productsApi, interestApi, categoriesApi } from "../api/products";
 import { getAuth } from "../state/auth";
 import Header from "../components/ui/Header";
 import ProductCard from "../components/ui/ProductCard";
@@ -25,9 +25,13 @@ export default function MarketplacePage() {
   // Tamaño de página (productos por página)
   const [pageSize, setPageSize] = useState(32);
 
+  // Categorías (se cargan desde MarketplacePage y se pasan al FilterSidebar)
+  const [categories, setCategories] = useState([]);
+
   const [filters, setFilters] = useState({
     searchTerm: "",
     tipo: "",
+    idCategoria: "",
     ubicacion: "",
     minPrice: 0,
     maxPrice: 10000,
@@ -49,6 +53,19 @@ export default function MarketplacePage() {
   useEffect(() => {
     loadProducts();
   }, [currentPage, sortBy, filters, showInterests, pageSize]);
+
+  // Cargar categorías una sola vez
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const res = await categoriesApi.getAll();
+        setCategories(res.data || []);
+      } catch (err) {
+        console.error("Error loading categories:", err);
+      }
+    };
+    loadCategories();
+  }, []);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -91,34 +108,101 @@ export default function MarketplacePage() {
         setTotalPages(response.data.totalPages);
         setTotalElements(response.data.totalElements);
       } else {
-        const hasFilters =
-          filters.searchTerm ||
-          filters.tipo ||
-          filters.ubicacion ||
-          filters.minPrice > 0 ||
-          filters.maxPrice < 10000 ||
-          filters.disponibilidad !== null;
+      const hasFilters =
+        filters.searchTerm ||
+        filters.tipo ||
+        filters.idCategoria ||
+        filters.ubicacion ||
+        filters.minPrice > 0 ||
+        filters.maxPrice < 10000 ||
+        filters.disponibilidad !== null;
 
-        response = hasFilters
-          ? await productsApi.filter({
-              ...filters,
-              page: currentPage,
-              size: pageSize,
-              sort: sortBy,
-            })
-          : await productsApi.getAll({
-              page: currentPage,
-              size: pageSize,
-              sort: sortBy,
-            });
+      // Preparar filtros para la API: convertir idCategoria a número si existe
+      const apiFilters = { ...filters };
+      if (apiFilters.idCategoria && apiFilters.idCategoria !== "") {
+        apiFilters.idCategoria = Number(apiFilters.idCategoria);
+      } else {
+        delete apiFilters.idCategoria;
+      }
 
-        // Mostrar solo productos con estado ACTIVO
+      // Eliminar filtros vacíos (""), manteniendo disponibilidad si es null
+      Object.keys(apiFilters).forEach((k) => {
+        if (apiFilters[k] === "") delete apiFilters[k];
+      });
+
+      if (hasFilters) {
+        // Cuando hay filtros, pedimos muchos resultados y filtramos en el frontend
+        response = await productsApi.filter({
+          ...apiFilters,
+          page: 0,
+          size: 1000,
+          sort: sortBy,
+        });
+
+        // Manejo flexible de respuesta
+        const productsData = response.data.content || [];
+
+        // Aplicar filtrado adicional en frontend (misma lógica que MyProductsPage)
+        const normalize = (v) => (v === null || v === undefined ? "" : v);
+        const search = (product, term) => {
+          if (!term) return true;
+          const t = term.toString().toLowerCase();
+          return (
+            (product.nombre || "").toString().toLowerCase().includes(t) ||
+            (product.descripcion || "").toString().toLowerCase().includes(t)
+          );
+        };
+
+        let filtered = productsData.filter((product) => {
+          if (product.estado !== "ACTIVO") return false;
+
+          if (apiFilters.tipo && product.tipo !== apiFilters.tipo) return false;
+
+          if (apiFilters.idCategoria && Number(product.idCategoria) !== Number(apiFilters.idCategoria)) return false;
+
+          if (apiFilters.disponibilidad !== undefined && apiFilters.disponibilidad !== null) {
+            if (typeof apiFilters.disponibilidad === "boolean") {
+              const isAvailable = (() => {
+                if (typeof product.disponible === "boolean") return product.disponible;
+                if (typeof product.cantidad === "number") return product.cantidad > 0;
+                return true;
+              })();
+              if (apiFilters.disponibilidad !== isAvailable) return false;
+            }
+          }
+
+          if (apiFilters.searchTerm && !search(product, apiFilters.searchTerm)) return false;
+
+          if (apiFilters.ubicacion && !product.ubicacion?.toLowerCase()?.includes(apiFilters.ubicacion.toLowerCase())) return false;
+
+          return true;
+        });
+
+        // Paginación local
+        const total = filtered.length;
+        const totalPg = Math.ceil(total / pageSize) || 0;
+        setTotalElements(total);
+        setTotalPages(totalPg);
+
+        const start = currentPage * pageSize;
+        const end = start + pageSize;
+        const paged = filtered.slice(start, end);
+        setProducts(paged);
+      } else {
+        // Sin filtros: petición paginada normal
+        response = await productsApi.getAll({
+          page: currentPage,
+          size: pageSize,
+          sort: sortBy,
+        });
+
         const filteredProducts = (response.data.content || []).filter(
           (product) => product.estado === "ACTIVO"
         );
         setProducts(filteredProducts);
         setTotalPages(response.data.totalPages);
         setTotalElements(response.data.totalElements);
+      }
       }
     } catch (err) {
       console.error("Error loading products:", err);
@@ -174,6 +258,7 @@ export default function MarketplacePage() {
               filters={filters}
               onFilterChange={handleFilterChange}
               onApplyFilters={handleApplyFilters}
+              categories={categories}
             />
           </aside>
 
@@ -335,8 +420,9 @@ export default function MarketplacePage() {
             <div className="p-4">
               <FilterSidebar
                 filters={filters}
-                onFilterChange={handleFilterChange}
-                onApplyFilters={handleApplyFilters}
+                  onFilterChange={handleFilterChange}
+                  onApplyFilters={handleApplyFilters}
+                  categories={categories}
               />
             </div>
           </div>

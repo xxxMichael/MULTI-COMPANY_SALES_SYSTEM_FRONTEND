@@ -1,8 +1,15 @@
 // Barra lateral de filtros
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
-export default function FilterSidebar({ filters, onFilterChange, onApplyFilters }) {
+export default function FilterSidebar({ filters, onFilterChange, onApplyFilters, categories = [] }) {
   const [localFilters, setLocalFilters] = useState(filters);
+  const debounceRef = useRef(null);
+  const DEBOUNCE_MS = 450; // tiempo de espera antes de aplicar cambios de precio
+
+  // Sincronizar cuando cambian los filtros desde el padre
+  useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
 
   const handleChange = (key, value) => {
     const newFilters = { ...localFilters, [key]: value };
@@ -11,22 +18,36 @@ export default function FilterSidebar({ filters, onFilterChange, onApplyFilters 
   };
 
   const handlePriceChange = (e) => {
-    const value = e.target.value;
-    handleChange("maxPrice", value);
+    const value = Number(e.target.value);
+    // Actualizar localmente pero debounced para evitar llamadas continuas
+    const updated = { ...localFilters, maxPrice: value };
+    setLocalFilters(updated);
+
+    // Debounce: limpiar anterior y crear uno nuevo
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (onFilterChange) onFilterChange(updated);
+    }, DEBOUNCE_MS);
   };
 
   const clearFilters = () => {
     const cleared = {
       searchTerm: "",
       tipo: "",
+      idCategoria: "",
       ubicacion: "",
       minPrice: 0,
       maxPrice: 10000,
       disponibilidad: null,
     };
     setLocalFilters(cleared);
-    onFilterChange(cleared);
-    onApplyFilters(cleared);
+    // cancelar debounce en curso
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    if (onFilterChange) onFilterChange(cleared);
+    if (onApplyFilters) onApplyFilters(cleared);
   };
 
   return (
@@ -74,6 +95,25 @@ export default function FilterSidebar({ filters, onFilterChange, onApplyFilters 
           </select>
         </div>
 
+        {/* Categoría */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Categoría
+          </label>
+          <select
+            value={localFilters.idCategoria || ""}
+            onChange={(e) => handleChange("idCategoria", e.target.value)}
+            className="w-full px-4 py-2 bg-slate-800/60 border border-slate-700 text-slate-100 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+          >
+            <option value="">Todas</option>
+            {categories.map((cat) => (
+              <option key={cat.idCategoria ?? cat.id} value={cat.idCategoria ?? cat.id}>
+                {cat.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Rango de precio */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -110,7 +150,16 @@ export default function FilterSidebar({ filters, onFilterChange, onApplyFilters 
                   type="number"
                   min="0"
                   value={localFilters.maxPrice}
-                  onChange={(e) => handleChange("maxPrice", Number(e.target.value))}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    // Reuse debounce logic for numeric maxPrice as well
+                    const updated = { ...localFilters, maxPrice: value };
+                    setLocalFilters(updated);
+                    if (debounceRef.current) clearTimeout(debounceRef.current);
+                    debounceRef.current = setTimeout(() => {
+                      if (onFilterChange) onFilterChange(updated);
+                    }, DEBOUNCE_MS);
+                  }}
                   className="w-full px-3 py-1 text-sm bg-slate-800/60 border border-slate-700 text-slate-100 rounded focus:ring-1 focus:ring-violet-500 transition-all"
                 />
               </div>
