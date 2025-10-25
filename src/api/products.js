@@ -63,8 +63,12 @@ export const productsApi = {
 
   // Crear producto con fotos
   createWithPhotos: (productData, files) => {
+    // No enviar `codigo` al backend; se genera allí
+    const payload = { ...productData };
+    if (payload.codigo) delete payload.codigo;
+
     const formData = new FormData();
-    formData.append("productData", JSON.stringify(productData));
+    formData.append("productData", JSON.stringify(payload));
 
     files.forEach((file) => {
       formData.append("files", file);
@@ -121,14 +125,21 @@ export const myProductsApi = {
 
   // Actualizar producto
   update: (id, productData) => {
-    return http.put(`${BASE_URL}/${id}`, productData);
+    // Backend ignora 'codigo' en actualizaciones y lo trata como inmutable.
+    const payload = { ...productData };
+    if (payload.codigo) delete payload.codigo;
+    return http.put(`${BASE_URL}/${id}`, payload);
   },
 
 
   // Actualizar producto con nuevas fotos
   updateWithPhotos: (id, productData, files) => {
+    // No enviar 'codigo' en la actualización; backend lo ignora. Evitar incluirlo en el formData.
+    const payload = { ...productData };
+    if (payload.codigo) delete payload.codigo;
+
     const formData = new FormData();
-    formData.append("productData", JSON.stringify(productData));
+    formData.append("productData", JSON.stringify(payload));
 
     if (files && files.length > 0) {
       files.forEach((file) => {
@@ -152,7 +163,10 @@ export const myProductsApi = {
   },
   // Crear producto sin fotos
   create: (productData) => {
-    return http.post(`${BASE_URL}`, productData);
+    // No enviar 'codigo' en la creación; backend lo generará.
+    const payload = { ...productData };
+    if (payload.codigo) delete payload.codigo;
+    return http.post(`${BASE_URL}`, payload);
   },
 
   // Obtener estadísticas de "Me Interesa" del vendedor
