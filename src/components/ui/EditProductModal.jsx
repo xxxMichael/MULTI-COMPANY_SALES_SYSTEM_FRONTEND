@@ -35,9 +35,9 @@ export default function EditProductModal({ product, onClose, onSave }) {
         ubicacion: product.ubicacion || "",
         disponibilidad: product.disponibilidad ?? true,
         tipo: product.tipo || "PRODUCTO",
-          horario: product.horario || "",
-          idVendedor: product.idVendedor || 0,
-          idCategoria: product.idCategoria || 1,
+        horario: product.horario || "",
+        idVendedor: product.idVendedor || 0,
+        idCategoria: product.idCategoria || 1,
       });
 
       if (product.fotos && product.fotos.length > 0) {
@@ -274,6 +274,7 @@ export default function EditProductModal({ product, onClose, onSave }) {
                 value={formData.horario}
                 onChange={handleChange}
                 placeholder="Ej: Lun-Vie 09:00-18:00"
+                maxLength={100}
               />
             </div>
           )}
