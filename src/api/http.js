@@ -2,50 +2,70 @@ import axios from "axios";
 import { getAuth } from "../state/auth";
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080",
+  baseURL:
+    import.meta.env.VITE_API_BASE ||
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:8080",
 });
 
-// Interceptor de request - agregar JWT
+/* ============================
+ * Interceptor de REQUEST
+ *  - Inyecta Authorization: Bearer <token>
+ * ============================ */
 http.interceptors.request.use(
   (config) => {
     const auth = getAuth();
-
     if (auth?.token) {
       config.headers.Authorization = `Bearer ${auth.token}`;
     } else {
-      console.warn("No hay token JWT disponible");
-      console.log(" Estado de auth completo:", auth);
-      console.log("localStorage mcms_auth:", localStorage.getItem("mcms_auth"));
+      console.warn("[HTTP] No hay token JWT disponible");
+      try {
+        console.log("Estado de auth:", auth);
+        console.log("localStorage mcms_auth:", localStorage.getItem("mcms_auth"));
+      } catch {
+      }
     }
-    
     return config;
   },
   (error) => {
-    console.error(" Error en request interceptor:", error);
+    console.error("[HTTP] Error en request interceptor:", error);
     return Promise.reject(error);
   }
 );
 
-
+/* ============================
+ * Interceptor de RESPONSE
+ *  - Logs de errores
+ *  - Logout SOLO en 401 (no autenticado)
+ *    * 403: lo maneja la UI (el usuario está autenticado pero sin permisos)
+ * ============================ */
 http.interceptors.response.use(
   (response) => {
-    console.log("HTTP Response Success:", {
-      url: response.config.url,
-      status: response.status,
-      data: response.data,
-    });
     return response;
   },
   (error) => {
-    console.error("HTTP Response Error:", {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      headers: error.config?.headers,
+    const status = error?.response?.status;
+    const cfg = error?.config;
+
+    console.error("[HTTP] Response Error:", {
+      url: cfg?.url,
+      method: cfg?.method,
+      status,
+      statusText: error?.response?.statusText,
+      data: error?.response?.data,
     });
 
+    if (status === 401) {
+      import("../state/auth").then(({ clearAuth }) => {
+        try {
+          clearAuth();
+        } finally {
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
+        }
+      });
+    }
 
     return Promise.reject(error);
   }

@@ -12,6 +12,7 @@ export function Input({
   error,
   showPasswordToggle = false,
   onToggleShowPassword,
+  disabled = false,
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -32,8 +33,13 @@ export function Input({
           required={required}
           autoComplete={autoComplete}
           maxLength={maxLength}
+          disabled={disabled}
           className={`w-full rounded-lg bg-slate-800/60 border px-3 py-2 pr-10 text-slate-100 placeholder:text-slate-400 outline-none ${
-            error ? "border-red-500 focus:border-red-500 focus:ring-red-500/30" : "border-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+            disabled
+              ? "bg-slate-700/50 cursor-not-allowed opacity-60"
+              : error
+              ? "border-red-500 focus:border-red-500 focus:ring-red-500/30"
+              : "border-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
           }`}
         />
         {showPasswordToggle && (

@@ -1,36 +1,85 @@
-// Componente de header reutilizable
+// src/components/ui/Header.jsx
 import { useNavigate } from "react-router-dom";
 import { getAuth, clearAuth } from "../../state/auth";
 import { useState, useRef, useEffect } from "react";
+import {
+  UserRound,
+  Mail,
+  Crown,
+  Heart,
+  Package,
+  ShoppingCart,
+  Settings,
+  Shield,
+  LogOut,
+  UserCog,
+  ChevronDown,
+} from "lucide-react";
 
 export default function Header() {
   const navigate = useNavigate();
   const auth = getAuth();
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const menuRef = useRef();
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const isLogged = !!auth?.user;
+  const role = auth?.user?.rol || "USER";
+  const fullName =
+    [auth?.user?.nombre, auth?.user?.apellido].filter(Boolean).join(" ") ||
+    auth?.user?.username ||
+    auth?.user?.correo ||
+    "Usuario";
+  const email = auth?.user?.correo || "";
+  const initial = (auth?.user?.nombre?.[0] || auth?.user?.correo?.[0] || "U")
+    .toUpperCase();
 
   const handleLogout = () => {
     clearAuth();
     navigate("/login");
   };
 
-  // Close menu on outside click
+  // Cerrar al hacer click afuera
   useEffect(() => {
-    function handleClick(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setShowUserMenu(false);
+    function onClickOutside(e) {
+      if (
+        open &&
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target)
+      ) {
+        setOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open]);
+
+  // Cerrar con ESC
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, []);
+
+  const goto = (path) => {
+    setOpen(false);
+    navigate(path);
+  };
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur-sm bg-slate-900/60 border-b border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/marketplace")}>
+          <button
+            onClick={() => navigate("/marketplace")}
+            className="flex items-center gap-3"
+            aria-label="Ir al Marketplace"
+          >
             <div className="bg-gradient-to-br from-blue-600 to-violet-600 p-2 rounded-lg shadow-lg shadow-blue-500/25">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -48,139 +97,179 @@ export default function Header() {
               </svg>
             </div>
             <h1 className="text-xl font-bold text-slate-50">Marketplace</h1>
-          </div>
+          </button>
 
           {/* Navegación */}
           <nav className="hidden md:flex items-center gap-6">
-                 {/* Navegación 
-     <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate("/marketplace");
-              }}
-              className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
-            >
-              Inicio
-            </a>
-            */}
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate("/marketplace");
-              }}
+            <button
+              onClick={() => navigate("/marketplace")}
               className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
             >
               Productos
-            </a>
-            {auth?.user && (
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate("/my-products");
-                }}
+            </button>
+
+            {isLogged && (
+              <button
+                onClick={() => navigate("/my-products")}
                 className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
               >
                 Mis Productos
-              </a>
+              </button>
             )}
-            <a
-              href="#"
+
+            {(role === "ADMIN" || role === "MODERATOR") && (
+              <button
+                onClick={() => navigate("/admin/users")}
+                className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
+              >
+                Gestión Usuarios
+              </button>
+            )}
+
+            <button
+              onClick={() => navigate("/contact")}
               className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
             >
               Contacto
-            </a>
+            </button>
           </nav>
 
           {/* Acciones */}
           <div className="flex items-center gap-3">
-            {/* Carrito
-            <button
-              className="p-2 text-slate-300 hover:text-slate-50 relative transition-colors"
-              title="Carrito de compras"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
-            </button>
- */}
-            {/* Usuario */}
-            <div className="relative flex items-center gap-2" ref={menuRef}>
-              <button
-                onClick={() => setShowUserMenu((s) => !s)}
-                className="p-2 text-slate-300 hover:text-slate-50 transition-colors"
-                title="Perfil de usuario"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+            {/* (opcional) carrito
+            <button className="p-2 text-slate-300 hover:text-slate-50 transition-colors" title="Carrito">
+              <ShoppingCart className="h-6 w-6" />
+            </button> 
+            */}
+
+            {/* Perfil / Auth */}
+            {!isLogged ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate("/login")}
+                  className="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800/60 text-slate-200 hover:bg-slate-700/60"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-              </button>
-
-              {/* User menu dropdown */}
-              {showUserMenu && auth?.user && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-slate-800 border border-slate-700 rounded-lg shadow-lg text-sm z-50">
-                  {/* User name (distinct style) */}
-                  <div className="px-4 py-3 border-b border-slate-700">
-                    <div className="text-slate-50 font-semibold text-base truncate">{auth.user.nombre || auth.user.username || auth.user.email || "Usuario"}</div>
+                  Iniciar sesión
+                </button>
+                <button
+                  onClick={() => navigate("/register")}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500"
+                >
+                  Crear cuenta
+                </button>
+              </div>
+            ) : (
+              <div className="relative" ref={menuRef}>
+                <button
+                  ref={triggerRef}
+                  onClick={() => setOpen((s) => !s)}
+                  className="group flex items-center gap-3 rounded-xl border border-slate-700/60 bg-slate-800/60 px-2 py-1.5 hover:bg-slate-700/60"
+                  aria-haspopup="menu"
+                  aria-expanded={open}
+                  aria-label="Abrir menú de usuario"
+                >
+                  {/* Avatar */}
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-violet-600 text-white flex items-center justify-center font-semibold">
+                    {initial}
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col p-1">
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        navigate('/my-products');
-                      }}
-                      className="text-left px-4 py-2 rounded hover:bg-slate-700 text-slate-200"
-                    >
-                      Mis productos
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        navigate('/welcome');
-                      }}
-                      className="text-left px-4 py-2 rounded hover:bg-slate-700 text-slate-200"
-                    >
-                      Perfil
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="text-left px-4 py-2 rounded hover:bg-red-700 text-red-400 mt-1"
-                    >
-                      Cerrar sesion
-                    </button>
+                  {/* Nombre y email (desktop) */}
+                  <div className="hidden sm:flex flex-col items-start">
+                    <span className="text-slate-100 text-sm leading-tight font-medium max-w-[140px] truncate">
+                      {fullName}
+                    </span>
+                    <span className="text-slate-400 text-xs leading-tight max-w-[160px] truncate flex items-center gap-1">
+                      <Mail className="h-3 w-3" />
+                      {email}
+                    </span>
                   </div>
-                </div>
-              )}
-            </div>
+                  <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-slate-200" />
+                </button>
+
+                {/* Dropdown */}
+                {open && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 mt-2 w-72 bg-slate-900/95 border border-slate-700 rounded-xl shadow-xl backdrop-blur-sm"
+                  >
+                    {/* Tarjeta usuario */}
+                    <div className="p-4 border-b border-slate-700">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-violet-600 text-white flex items-center justify-center font-semibold">
+                          {initial}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-slate-50 font-semibold truncate">{fullName}</p>
+                            {role === "ADMIN" && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800">
+                                <Crown className="h-3 w-3" />
+                                ADMIN
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-slate-400 text-xs truncate">{email}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Acciones rápidas */}
+                    <div className="p-2">
+                      <MenuItem
+                        icon={<UserCog className="h-4 w-4" />}
+                        label="Editar perfil"
+                        onClick={() => goto("/edit-profile")}
+                      />
+                    </div>
+
+                    {/* Sección de actividad */}
+                    <div className="px-2 pb-2">
+                      {(role === "ADMIN" || role === "MODERATOR") && (
+                        <>
+                          <div className="px-2 py-1 text-[11px] uppercase tracking-wide text-slate-500 mt-2">
+                            Administración
+                          </div>
+                          <MenuItem
+                            icon={<UserCog className="h-4 w-4" />}
+                            label="Usuarios"
+                            onClick={() => goto("/admin/users")}
+                          />
+                        </>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="p-2 border-t border-slate-700">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full inline-flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:text-white hover:bg-red-600/20 transition"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Cerrar sesión
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
     </header>
+  );
+}
+
+/* ---------- Item del menú (reutilizable) ---------- */
+function MenuItem({ icon, label, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition"
+      role="menuitem"
+    >
+      <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-slate-800 border border-slate-700 text-slate-300">
+        {icon}
+      </span>
+      <span className="truncate">{label}</span>
+    </button>
   );
 }
