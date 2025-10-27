@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [userStatus, setUserStatus] = useState(null);
   const navigate = useNavigate();
 
   const onChange = (e) =>
@@ -20,22 +22,42 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setMsg("");
+    console.log("Intentando login con:", form);
+
     try {
       const res = await login(form);
-      setAuth({
-        token: res.token,
-        user: {
-          id: res.id,
-          correo: res.correo,
-          nombre: res.nombre,
-          apellido: res.apellido,
-          rol: res.rol,
-        },
-      });
-      navigate("/marketplace", { replace: true });
+      console.log("Respuesta del login:", res);
+
+      // Verificar estado del usuario
+      if (res.estado === 'SUSPENDIDO') {
+        console.log("Usuario suspendido");
+        setUserStatus({ estado: 'SUSPENDIDO', message: 'Tu cuenta está suspendida. Contacta al administrador o moderadores para más información.' });
+        setShowStatusModal(true);
+        return;
+      }
+
+      if (res.estado === 'ELIMINADO') {
+        console.log("Usuario eliminado");
+        setUserStatus({ estado: 'ELIMINADO', message: 'Tu cuenta ha sido eliminada. No puedes acceder al sistema.' });
+        setShowStatusModal(true);
+        return;
+      }
+
+      // Si el estado es ACTIVO, el login ya guardó el auth
+      if (res.estado === 'ACTIVO') {
+        console.log("Usuario activo, navegando al marketplace");
+        navigate("/marketplace", { replace: true });
+      } else if (!res.estado) {
+        console.log("Estado no definido, asumiendo ACTIVO");
+        navigate("/marketplace", { replace: true });
+      } else {
+        console.log("Estado desconocido:", res.estado);
+        setMsg("Estado de cuenta desconocido");
+      }
     } catch (err) {
+      console.error("Error en login:", err);
       const message =
-        err?.response?.data?.message || "No se pudo iniciar sesión";
+        err?.response?.data?.message || err.message || "No se pudo iniciar sesión";
       setMsg(message);
     } finally {
       setLoading(false);
@@ -213,6 +235,43 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Status Modal */}
+      {showStatusModal && userStatus && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 w-full max-w-md">
+            <div className="text-center">
+              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
+                userStatus.estado === 'SUSPENDIDO'
+                  ? 'bg-yellow-500/20 text-yellow-400'
+                  : 'bg-red-500/20 text-red-400'
+              }`}>
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+
+              <h2 className="text-2xl font-bold mb-4 text-slate-50">
+                {userStatus.estado === 'SUSPENDIDO' ? 'Cuenta Suspendida' : 'Cuenta Eliminada'}
+              </h2>
+
+              <p className="text-slate-300 mb-6">
+                {userStatus.message}
+              </p>
+
+              <Button
+                onClick={() => {
+                  setShowStatusModal(false);
+                  setUserStatus(null);
+                }}
+                className="w-full bg-slate-700 hover:bg-slate-600"
+              >
+                Entendido
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
