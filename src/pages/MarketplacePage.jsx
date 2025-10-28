@@ -9,6 +9,8 @@ import ProductDetailModal from "../components/ui/ProductDetailModal";
 import FilterSidebar from "../components/ui/FilterSidebar";
 import Pagination from "../components/ui/Pagination";
 import { Heart } from "lucide-react";
+import { useAtom } from "jotai";
+import { favoritesStateAtom, favoritesCountAtom } from "../state/favorites";
 
 export default function MarketplacePage() {
   const navigate = useNavigate();
@@ -23,10 +25,12 @@ export default function MarketplacePage() {
   const [totalElements, setTotalElements] = useState(0);
 
   // Tamaño de página (productos por página)
-  const [pageSize, setPageSize] = useState(32);
+  const [pageSize, setPageSize] = useState(12);
 
   // Categorías (se cargan desde MarketplacePage y se pasan al FilterSidebar)
   const [categories, setCategories] = useState([]);
+  const [favoritesState, setFavoritesState] = useAtom(favoritesStateAtom);
+  const [favoritesCount, setFavoritesCount] = useAtom(favoritesCountAtom);
 
   const [filters, setFilters] = useState({
     searchTerm: "",
@@ -54,6 +58,14 @@ export default function MarketplacePage() {
     loadProducts();
   }, [currentPage, sortBy, filters, showInterests, pageSize]);
 
+  const pageSizeOptions = [6,9, 18, 32, 64];
+
+  const handlePageSizeChange = (e) => {
+    const size = Number(e.target.value) || 9;
+    setPageSize(size);
+    setCurrentPage(0);
+  };
+
   // Cargar categorías una sola vez
   useEffect(() => {
     const loadCategories = async () => {
@@ -73,6 +85,12 @@ export default function MarketplacePage() {
 
     try {
       let response;
+
+      const isAvailable = (product) => {
+        if (product?.disponibilidad === true) return true;
+        if (product?.disponibilidad === false) return false;
+        return true;
+      };
 
       // Si está activo el filtro "Productos que me interesan"
       if (showInterests) {
@@ -99,14 +117,20 @@ export default function MarketplacePage() {
           })
         );
 
-        // Filtrar solo productos ACTIVOS
+        // Filtrar solo productos ACTIVOS y disponibles
         const filteredProducts = productsWithDetails.filter(
-          (product) => product.estado === "ACTIVO"
+          (product) => product.estado === "ACTIVO" && isAvailable(product)
         );
         
-        setProducts(filteredProducts);
-        setTotalPages(response.data.totalPages);
-        setTotalElements(response.data.totalElements);
+  
+    const totalInterests = filteredProducts.length;
+    const pages = Math.ceil(totalInterests / pageSize) || 0;
+
+    setProducts(filteredProducts);
+    setTotalPages(pages);
+    setTotalElements(totalInterests);
+
+    if (auth?.user?.id) prefetchInterestsForProducts(filteredProducts);
       } else {
       const hasFilters =
         filters.searchTerm ||
@@ -132,6 +156,9 @@ export default function MarketplacePage() {
 
       if (hasFilters) {
         // Cuando hay filtros, pedimos muchos resultados y filtramos en el frontend
+        // Forzamos al backend a devolver solo productos disponibles para
+        // evitar inconsistencias entre contenido y totales.
+        apiFilters.disponibilidad = true;
         response = await productsApi.filter({
           ...apiFilters,
           page: 0,
@@ -155,6 +182,7 @@ export default function MarketplacePage() {
 
         let filtered = productsData.filter((product) => {
           if (product.estado !== "ACTIVO") return false;
+          if (!isAvailable(product)) return false;
 
           if (apiFilters.tipo && product.tipo !== apiFilters.tipo) return false;
 
@@ -178,30 +206,58 @@ export default function MarketplacePage() {
           return true;
         });
 
-        // Paginación local
-        const total = filtered.length;
-        const totalPg = Math.ceil(total / pageSize) || 0;
-        setTotalElements(total);
-        setTotalPages(totalPg);
+  const total = filtered.length;
+  const totalPg = Math.ceil(total / pageSize) || 0;
+  setTotalElements(total);
+  setTotalPages(totalPg);
 
         const start = currentPage * pageSize;
         const end = start + pageSize;
-        const paged = filtered.slice(start, end);
-        setProducts(paged);
+  const paged = filtered.slice(start, end);
+  setProducts(paged);
+
+        if (auth?.user?.id) prefetchInterestsForProducts(paged);
       } else {
-        // Sin filtros: petición paginada normal
-        response = await productsApi.getAll({
+        // Sin filtros: pedir al endpoint de filter con estado=ACTIVO para que
+        // el backend devuelva la paginación correcta y evitar filtrar aquí
+        // causando desajustes en totalPages/totalElements.
+        // Pedimos al backend solo productos activos y disponibles para que
+        // los totales devueltos sean correctos.
+        response = await productsApi.filter({
           page: currentPage,
           size: pageSize,
           sort: sortBy,
+          estado: "ACTIVO",
+          disponibilidad: true,
         });
 
-        const filteredProducts = (response.data.content || []).filter(
-          (product) => product.estado === "ACTIVO"
-        );
-        setProducts(filteredProducts);
-        setTotalPages(response.data.totalPages);
-        setTotalElements(response.data.totalElements);
+        // Manejo robusto del formato de respuesta (array o objeto paginado)
+        const content = Array.isArray(response.data)
+          ? response.data
+          : response.data.content || [];
+        const totalElems = Array.isArray(response.data)
+          ? content.length
+          : response.data.totalElements ?? content.length;
+        const totalPgs = Array.isArray(response.data)
+          ? Math.ceil(content.length / pageSize) || 0
+          : (response.data.totalPages ?? Math.ceil(totalElems / pageSize)) || 0;
+
+        // Filtramos por disponibilidad por si el backend no aplicó el filtro
+        const visibleContent = content.filter(isAvailable);
+        setProducts(visibleContent);
+        // Si pedimos al backend `disponibilidad: true` los totales ya serán
+        // correctos; si no, recalculamos a partir del contenido visible.
+        const finalTotal = Array.isArray(response.data)
+          ? visibleContent.length
+          : response.data.totalElements ?? visibleContent.length;
+        const finalPages = Array.isArray(response.data)
+          ? Math.ceil(visibleContent.length / pageSize) || 0
+          : (response.data.totalPages ?? Math.ceil(finalTotal / pageSize)) || 0;
+
+        setTotalPages(finalPages);
+        setTotalElements(finalTotal);
+
+        if (auth?.user?.id) prefetchInterestsForProducts(content);
       }
       }
     } catch (err) {
@@ -212,9 +268,56 @@ export default function MarketplacePage() {
     }
   };
 
+  const prefetchInterestsForProducts = async (productsList) => {
+    try {
+      const toFetch = productsList.filter((p) => !favoritesState.has(p.idProducto));
+      if (toFetch.length === 0) return;
+
+      const promises = toFetch.map((p) =>
+        Promise.all([
+          interestApi.exists(auth.user.id, p.idProducto).then((res) => res.data).catch(() => null),
+          interestApi.getCount(p.idProducto).then((res) => res.data).catch(() => null),
+        ])
+          .then(([existsData, countData]) => ({ id: p.idProducto, existsData, countData }))
+          .catch((err) => ({ id: p.idProducto, err }))
+      );
+
+      const results = await Promise.all(promises);
+      const newStateMap = new Map(favoritesState);
+      const newCountMap = new Map(favoritesCount);
+      let stateChanged = false;
+      let countChanged = false;
+
+      results.forEach((r) => {
+        if (r.err) return;
+
+        if (r.existsData) {
+          const interested = r.existsData?.tieneInteres ?? r.existsData?.meInteresa ?? false;
+          if (newStateMap.get(r.id) !== interested) {
+            newStateMap.set(r.id, interested);
+            stateChanged = true;
+          }
+        }
+
+        if (r.countData) {
+          const count = r.countData?.cantidadMeInteresa ?? r.countData?.count ?? r.countData?.totalIntereses ?? 0;
+          if (newCountMap.get(r.id) !== count) {
+            newCountMap.set(r.id, count);
+            countChanged = true;
+          }
+        }
+      });
+
+      if (stateChanged) setFavoritesState(newStateMap);
+      if (countChanged) setFavoritesCount(newCountMap);
+    } catch (e) {
+      console.error("Error prefetching interests:", e);
+    }
+  };
+
   const handleFilterChange = (newFilters) => {
-  setFilters(newFilters);
-  setCurrentPage(0);
+    setFilters(newFilters);
+    setCurrentPage(0);
   };
 
   const handleApplyFilters = (newFilters) => {
@@ -315,6 +418,17 @@ export default function MarketplacePage() {
                   <option value="precio,desc">Mayor precio</option>
                   <option value="nombre,asc">A-Z</option>
                   <option value="nombre,desc">Z-A</option>
+                </select>
+
+                {/* Selector de tamaño de página */}
+                <select
+                  value={pageSize}
+                  onChange={handlePageSizeChange}
+                  className="px-3 py-2 bg-slate-800/60 border border-slate-700 text-slate-100 rounded-lg focus:ring-2 focus:ring-violet-400 focus:border-transparent"
+                >
+                  {pageSizeOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt} </option>
+                  ))}
                 </select>
 
                 {/* pageSize por defecto = 32 (sin selector) */}
