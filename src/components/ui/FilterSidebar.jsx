@@ -181,7 +181,7 @@ export default function FilterSidebar({ filters, onFilterChange, onApplyFilters,
           />
         </div>
 
-        {/* Disponibilidad */}
+        {/* Disponibilidad 
         <div className="mb-6">
           <label className="block text-sm font-medium text-slate-300 mb-2">
             Disponibilidad
@@ -218,7 +218,7 @@ export default function FilterSidebar({ filters, onFilterChange, onApplyFilters,
               <span className="ml-2 text-slate-300 group-hover:text-slate-100 transition-colors">No disponible</span>
             </label>
           </div>
-        </div>
+        </div>*/}
 
         {/* Botón aplicar 
         <button
