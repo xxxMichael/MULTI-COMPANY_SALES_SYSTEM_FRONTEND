@@ -24,7 +24,7 @@ export default function MyProductsPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const PAGE_SIZE = 6;
+  const PAGE_SIZE = 12;
   
   // Filtros
   const [filters, setFilters] = useState({
