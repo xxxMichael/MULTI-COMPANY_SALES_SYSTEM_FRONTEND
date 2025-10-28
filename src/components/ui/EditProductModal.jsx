@@ -174,7 +174,7 @@ export default function EditProductModal({ product, onClose, onSave }) {
       <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-800/50 bg-slate-900/95 backdrop-blur-xl shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between p-6 border-b border-slate-800/50 bg-slate-900/95 backdrop-blur-xl">
-          <h2 className="text-2xl font-bold text-slate-50">Editar Producto</h2>
+          <h2 className="text-2xl font-bold text-slate-50">{`Editar ${formData.tipo === "SERVICIO" ? "Servicio" : "Producto"}`}</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-xl hover:bg-slate-800/50 text-slate-400 hover:text-slate-50 transition-all"
