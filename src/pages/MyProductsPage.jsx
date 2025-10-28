@@ -7,6 +7,7 @@ import MyProductCard from "../components/ui/MyProductCard";
 import EditProductModal from "../components/ui/EditProductModal";
 import MyProductsFilter from "../components/ui/MyProductsFilter";
 import Pagination from "../components/ui/Pagination";
+import ConfirmModal from "../components/ui/ConfirmModal";
 import { myProductsApi, interestApi, productsApi } from "../api/products";
 import { getAuth } from "../state/auth";
 
@@ -37,6 +38,10 @@ export default function MyProductsPage() {
   // Modales
   const [editingProduct, setEditingProduct] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  // Confirm delete modal
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Estadísticas
   const [totalInterests, setTotalInterests] = useState(0);
@@ -229,18 +234,31 @@ export default function MyProductsPage() {
     setShowEditModal(true);
   };
 
-  const handleDelete = async (product) => {
-    if (!confirm(`¿Estás seguro de eliminar "${product.nombre}"?`)) {
-      return;
-    }
+  const handleDelete = (product) => {
+    setProductToDelete(product);
+    setConfirmOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    setDeleteLoading(true);
     try {
-      await myProductsApi.deleteLogically(product.idProducto);
-      loadProducts(); // Recargar lista
+      await myProductsApi.deleteLogically(productToDelete.idProducto);
+      // cerrar modal y recargar
+      setConfirmOpen(false);
+      setProductToDelete(null);
+      await loadProducts(); // Recargar lista
     } catch (err) {
       console.error("Error al eliminar producto:", err);
       alert("Error al eliminar el producto");
+    } finally {
+      setDeleteLoading(false);
     }
+  };
+
+  const cancelDelete = () => {
+    setConfirmOpen(false);
+    setProductToDelete(null);
   };
 
   const handleAppeal = (product) => {
@@ -517,6 +535,22 @@ export default function MyProductsPage() {
           onSave={handleSaveEdit}
         />
       )}
+
+      {/* Confirmación reutilizable para eliminar */}
+      <ConfirmModal
+        open={confirmOpen}
+        title="Confirmar eliminación"
+        description={
+          productToDelete
+            ? `¿Estás seguro de eliminar "${productToDelete.nombre}"?`
+            : "¿Estás seguro?"
+        }
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={deleteLoading}
+      />
     </div>
   );
 }
