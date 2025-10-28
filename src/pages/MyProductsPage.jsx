@@ -24,7 +24,7 @@ export default function MyProductsPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const PAGE_SIZE = 12;
+  const PAGE_SIZE = 6;
   
   // Filtros
   const [filters, setFilters] = useState({
@@ -117,11 +117,11 @@ export default function MyProductsPage() {
       let totalElements = 0;
 
       if (Array.isArray(response.data)) {
-        // Si es un array directo
+      
         productsData = response.data;
-        totalPages = 1;
-        totalElements = response.data.length;
-        console.log("Formato: Array directo");
+        totalElements = productsData.length;
+        totalPages = Math.ceil(totalElements / PAGE_SIZE) || 0;
+        console.log("Formato: Array directo (no paginado)");
       } else if (response.data.content) {
         // Si es un objeto con content (paginado)
         productsData = response.data.content;
@@ -195,12 +195,21 @@ export default function MyProductsPage() {
           (product) => product.estado === "ACTIVO" || product.estado === "OCULTO"
         );
       }
-      
+
       console.log("Productos después de filtrar:", productsData);
-      
-      setProducts(productsData);
-      setTotalPages(totalPages);
-      setTotalElements(totalElements);
+
+
+  const recalculatedTotal = productsData.length;
+  const recalculatedPages = Math.ceil(recalculatedTotal / PAGE_SIZE) || 0;
+
+
+  const start = currentPage * PAGE_SIZE;
+  const end = start + PAGE_SIZE;
+  const paged = productsData.slice(start, end);
+
+  setProducts(paged);
+  setTotalPages(recalculatedPages);
+  setTotalElements(recalculatedTotal);
     } catch (err) {
       console.error("Error al cargar productos:", err);
       setError("Error al cargar tus productos");
