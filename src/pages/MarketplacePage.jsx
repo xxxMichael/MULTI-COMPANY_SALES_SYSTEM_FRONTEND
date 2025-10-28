@@ -9,6 +9,8 @@ import ProductDetailModal from "../components/ui/ProductDetailModal";
 import FilterSidebar from "../components/ui/FilterSidebar";
 import Pagination from "../components/ui/Pagination";
 import { Heart } from "lucide-react";
+import { useAtom } from "jotai";
+import { favoritesStateAtom, favoritesCountAtom } from "../state/favorites";
 
 export default function MarketplacePage() {
   const navigate = useNavigate();
@@ -27,6 +29,8 @@ export default function MarketplacePage() {
 
   // Categorías (se cargan desde MarketplacePage y se pasan al FilterSidebar)
   const [categories, setCategories] = useState([]);
+  const [favoritesState, setFavoritesState] = useAtom(favoritesStateAtom);
+  const [favoritesCount, setFavoritesCount] = useAtom(favoritesCountAtom);
 
   const [filters, setFilters] = useState({
     searchTerm: "",
@@ -104,9 +108,11 @@ export default function MarketplacePage() {
           (product) => product.estado === "ACTIVO"
         );
         
-        setProducts(filteredProducts);
-        setTotalPages(response.data.totalPages);
-        setTotalElements(response.data.totalElements);
+  setProducts(filteredProducts);
+  setTotalPages(response.data.totalPages);
+  setTotalElements(response.data.totalElements);
+
+  if (auth?.user?.id) prefetchInterestsForProducts(filteredProducts);
       } else {
       const hasFilters =
         filters.searchTerm ||
@@ -178,7 +184,6 @@ export default function MarketplacePage() {
           return true;
         });
 
-        // Paginación local
         const total = filtered.length;
         const totalPg = Math.ceil(total / pageSize) || 0;
         setTotalElements(total);
@@ -186,8 +191,10 @@ export default function MarketplacePage() {
 
         const start = currentPage * pageSize;
         const end = start + pageSize;
-        const paged = filtered.slice(start, end);
-        setProducts(paged);
+  const paged = filtered.slice(start, end);
+  setProducts(paged);
+
+  if (auth?.user?.id) prefetchInterestsForProducts(paged);
       } else {
         // Sin filtros: petición paginada normal
         response = await productsApi.getAll({
@@ -199,9 +206,11 @@ export default function MarketplacePage() {
         const filteredProducts = (response.data.content || []).filter(
           (product) => product.estado === "ACTIVO"
         );
-        setProducts(filteredProducts);
-        setTotalPages(response.data.totalPages);
-        setTotalElements(response.data.totalElements);
+  setProducts(filteredProducts);
+  setTotalPages(response.data.totalPages);
+  setTotalElements(response.data.totalElements);
+
+  if (auth?.user?.id) prefetchInterestsForProducts(filteredProducts);
       }
       }
     } catch (err) {
@@ -212,9 +221,56 @@ export default function MarketplacePage() {
     }
   };
 
+  const prefetchInterestsForProducts = async (productsList) => {
+    try {
+      const toFetch = productsList.filter((p) => !favoritesState.has(p.idProducto));
+      if (toFetch.length === 0) return;
+
+      const promises = toFetch.map((p) =>
+        Promise.all([
+          interestApi.exists(auth.user.id, p.idProducto).then((res) => res.data).catch(() => null),
+          interestApi.getCount(p.idProducto).then((res) => res.data).catch(() => null),
+        ])
+          .then(([existsData, countData]) => ({ id: p.idProducto, existsData, countData }))
+          .catch((err) => ({ id: p.idProducto, err }))
+      );
+
+      const results = await Promise.all(promises);
+      const newStateMap = new Map(favoritesState);
+      const newCountMap = new Map(favoritesCount);
+      let stateChanged = false;
+      let countChanged = false;
+
+      results.forEach((r) => {
+        if (r.err) return;
+
+        if (r.existsData) {
+          const interested = r.existsData?.tieneInteres ?? r.existsData?.meInteresa ?? false;
+          if (newStateMap.get(r.id) !== interested) {
+            newStateMap.set(r.id, interested);
+            stateChanged = true;
+          }
+        }
+
+        if (r.countData) {
+          const count = r.countData?.cantidadMeInteresa ?? r.countData?.count ?? r.countData?.totalIntereses ?? 0;
+          if (newCountMap.get(r.id) !== count) {
+            newCountMap.set(r.id, count);
+            countChanged = true;
+          }
+        }
+      });
+
+      if (stateChanged) setFavoritesState(newStateMap);
+      if (countChanged) setFavoritesCount(newCountMap);
+    } catch (e) {
+      console.error("Error prefetching interests:", e);
+    }
+  };
+
   const handleFilterChange = (newFilters) => {
-  setFilters(newFilters);
-  setCurrentPage(0);
+    setFilters(newFilters);
+    setCurrentPage(0);
   };
 
   const handleApplyFilters = (newFilters) => {
