@@ -58,6 +58,14 @@ export default function MarketplacePage() {
     loadProducts();
   }, [currentPage, sortBy, filters, showInterests, pageSize]);
 
+  const pageSizeOptions = [6,9, 18, 32, 64];
+
+  const handlePageSizeChange = (e) => {
+    const size = Number(e.target.value) || 9;
+    setPageSize(size);
+    setCurrentPage(0);
+  };
+
   // Cargar categorías una sola vez
   useEffect(() => {
     const loadCategories = async () => {
@@ -410,6 +418,17 @@ export default function MarketplacePage() {
                   <option value="precio,desc">Mayor precio</option>
                   <option value="nombre,asc">A-Z</option>
                   <option value="nombre,desc">Z-A</option>
+                </select>
+
+                {/* Selector de tamaño de página */}
+                <select
+                  value={pageSize}
+                  onChange={handlePageSizeChange}
+                  className="px-3 py-2 bg-slate-800/60 border border-slate-700 text-slate-100 rounded-lg focus:ring-2 focus:ring-violet-400 focus:border-transparent"
+                >
+                  {pageSizeOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt} </option>
+                  ))}
                 </select>
 
                 {/* pageSize por defecto = 32 (sin selector) */}
