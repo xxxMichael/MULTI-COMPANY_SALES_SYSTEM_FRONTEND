@@ -123,7 +123,7 @@ class WebSocketService {
     const queueDestination = `/queue/chat.${userId}`;
     const readDestination = `/queue/mensajes-leidos.${userId}`;
 
-    // Suscripción para mensajes personales
+  // Suscripción para mensajes personales
     const queueSubscription = this.client.subscribe(queueDestination, (message) => {
       try {
         const messageData = JSON.parse(message.body);
@@ -133,6 +133,9 @@ class WebSocketService {
         window.dispatchEvent(new CustomEvent('chatNotification', {
           detail: messageData
         }));
+        
+        // Log adicional para debugging
+        console.log('Evento chatNotification emitido:', messageData);
       } catch (error) {
         console.error('Error al procesar notificación personal:', error);
       }
@@ -147,6 +150,9 @@ class WebSocketService {
         window.dispatchEvent(new CustomEvent('messagesRead', {
           detail: readData
         }));
+        
+        // Log adicional para debugging
+        console.log('Evento messagesRead emitido:', readData);
       } catch (error) {
         console.error('Error al procesar confirmación de lectura:', error);
       }

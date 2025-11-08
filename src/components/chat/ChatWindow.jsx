@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import webSocketService from '../../api/websocket';
 import { chatApi } from '../../api/chat';
 import MessageInput from './MessageInput';
@@ -13,26 +13,12 @@ export default function ChatWindow({
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const lastChatIdRef = useRef(null);
 
-  useEffect(() => {
-    if (chat) {
-      loadMessages();
-      subscribeToChat();
-      markMessagesAsRead();
-    }
-
-    return () => {
-      if (chat) {
-        webSocketService.unsubscribeFromChat(chat.idChat);
-      }
-    };
-  }, [chat?.idChat]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const loadMessages = async () => {
+  // Función de carga de mensajes como callback
+  const loadMessages = useCallback(async () => {
+    if (!chat?.idChat) return;
+    
     try {
       setLoading(true);
       const messagesData = await chatApi.getMessagesByChat(chat.idChat);
@@ -44,39 +30,80 @@ export default function ChatWindow({
     } finally {
       setLoading(false);
     }
-  };
+  }, [chat?.idChat]);
 
-  const subscribeToChat = () => {
-    try {
-      webSocketService.subscribeToChat(chat.idChat, (newMessage) => {
-        setMessages(prev => {
-          // Verificar si el mensaje ya existe para evitar duplicados
-          const exists = prev.some(msg => msg.idMensaje === newMessage.idMensaje);
-          if (exists) return prev;
-          
-          return [...prev, newMessage];
-        });
-
-        // Si el mensaje no es del usuario actual, marcarlo como leído automáticamente
-        if (newMessage.idEmisor !== currentUserId) {
-          setTimeout(() => {
-            markMessagesAsRead();
-          }, 1000);
-        }
-      });
-    } catch (err) {
-      console.error('Error al suscribirse al chat:', err);
+  // Efecto para cargar mensajes cuando cambia el chat
+  useEffect(() => {
+    if (chat && chat.idChat !== lastChatIdRef.current) {
+      lastChatIdRef.current = chat.idChat;
+      loadMessages();
+      markMessagesAsRead();
     }
-  };
+  }, [chat?.idChat, loadMessages]);
 
-  const markMessagesAsRead = async () => {
+  // Efecto para suscripción a WebSocket
+  useEffect(() => {
+    if (!chat?.idChat) return;
+
+    const subscribeToChat = () => {
+      try {
+        webSocketService.subscribeToChat(chat.idChat, (newMessage) => {
+          console.log('ChatWindow - Nuevo mensaje recibido:', newMessage);
+          
+          setMessages(prev => {
+            // Verificar si el mensaje ya existe para evitar duplicados
+            const exists = prev.some(msg => 
+              msg.idMensaje === newMessage.idMensaje || 
+              (msg.contenido === newMessage.contenido && 
+               msg.idEmisor === newMessage.idEmisor && 
+               Math.abs(new Date(msg.fechaEnvio) - new Date(newMessage.fechaEnvio)) < 1000)
+            );
+            
+            if (exists) {
+              console.log('Mensaje duplicado detectado, ignorando');
+              return prev;
+            }
+            
+            const updatedMessages = [...prev, newMessage];
+            console.log('Mensaje agregado, total mensajes:', updatedMessages.length);
+            return updatedMessages;
+          });
+
+          // Si el mensaje no es del usuario actual, marcarlo como leído automáticamente
+          if (newMessage.idEmisor !== currentUserId) {
+            setTimeout(() => {
+              markMessagesAsRead();
+            }, 1000);
+          }
+        });
+      } catch (err) {
+        console.error('Error al suscribirse al chat:', err);
+      }
+    };
+
+    subscribeToChat();
+
+    // Cleanup: desuscribirse del chat anterior
+    return () => {
+      webSocketService.unsubscribeFromChat(chat.idChat);
+    };
+  }, [chat?.idChat, currentUserId]);
+
+  // Efecto para hacer scroll hacia abajo cuando llegan nuevos mensajes
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const markMessagesAsRead = useCallback(async () => {
+    if (!chat?.idChat || !currentUserId) return;
+    
     try {
       await chatApi.markMessagesAsRead(chat.idChat, currentUserId);
       webSocketService.markMessagesAsRead(chat.idChat, currentUserId);
     } catch (err) {
       console.error('Error al marcar mensajes como leídos:', err);
     }
-  };
+  }, [chat?.idChat, currentUserId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

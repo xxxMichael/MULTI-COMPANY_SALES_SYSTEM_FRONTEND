@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { chatApi } from '../../api/chat';
 
 export default function ChatList({ 
@@ -12,19 +12,23 @@ export default function ChatList({
   const [error, setError] = useState(null);
   const [unreadCounts, setUnreadCounts] = useState(new Map());
 
-  useEffect(() => {
-    loadChats();
-  }, [currentUserId, refreshTrigger]);
-
-  const loadChats = async () => {
+  // Función de carga de chats como callback para evitar recreaciones
+  const loadChats = useCallback(async () => {
+    if (!currentUserId) return;
+    
     try {
       setLoading(true);
       const chatsData = await chatApi.getChatsByUser(currentUserId);
       setChats(chatsData || []);
       
       // Obtener conteo de mensajes no leídos
-      const unreadCount = await chatApi.getUnreadMessagesCount(currentUserId);
-      // Esto podría necesitar ajuste dependiendo de la estructura de respuesta del backend
+      try {
+        const unreadCount = await chatApi.getUnreadMessagesCount(currentUserId);
+        // Actualizar contador total si es necesario
+        console.log('Mensajes no leídos:', unreadCount);
+      } catch (unreadError) {
+        console.warn('Error al obtener mensajes no leídos:', unreadError);
+      }
       
       setError(null);
     } catch (err) {
@@ -33,7 +37,39 @@ export default function ChatList({
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUserId]);
+
+  useEffect(() => {
+    loadChats();
+  }, [loadChats, refreshTrigger]);
+
+  // Efecto para escuchar notificaciones de chat en tiempo real
+  useEffect(() => {
+    const handleChatNotification = (event) => {
+      const messageData = event.detail;
+      console.log('ChatList - Notificación recibida:', messageData);
+      
+      // Recargar chats para mostrar el nuevo mensaje
+      loadChats();
+    };
+
+    const handleMessagesRead = (event) => {
+      const readData = event.detail;
+      console.log('ChatList - Mensajes marcados como leídos:', readData);
+      
+      // Recargar chats para actualizar contadores
+      loadChats();
+    };
+
+    // Agregar listeners para eventos de WebSocket
+    window.addEventListener('chatNotification', handleChatNotification);
+    window.addEventListener('messagesRead', handleMessagesRead);
+
+    return () => {
+      window.removeEventListener('chatNotification', handleChatNotification);
+      window.removeEventListener('messagesRead', handleMessagesRead);
+    };
+  }, [loadChats]);
 
   const getOtherUser = (chat) => {
     if (!chat || !currentUserId) return null;

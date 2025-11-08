@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getAuth } from '../state/auth';
 import { chatApi } from '../api/chat';
@@ -15,6 +15,27 @@ export default function ChatPage() {
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [isMobileView, setIsMobileView] = useState(false);
 
+  // Función de conexión como callback
+  const connectWebSocket = useCallback(async () => {
+    const userId = auth?.user?.idUsuario || auth?.user?.id;
+    if (!userId) return;
+
+    try {
+      setConnectionStatus('connecting');
+      
+      webSocketService.setConnectionChangeHandler((connected) => {
+        setConnectionStatus(connected ? 'connected' : 'disconnected');
+        console.log('Estado de conexión WebSocket:', connected ? 'conectado' : 'desconectado');
+      });
+
+      await webSocketService.connect(userId);
+      console.log('WebSocket conectado exitosamente para usuario:', userId);
+    } catch (error) {
+      console.error('Error al conectar WebSocket:', error);
+      setConnectionStatus('error');
+    }
+  }, [auth?.user?.idUsuario, auth?.user?.id]);
+
   useEffect(() => {
     console.log('Estado de autenticación:', auth);
     console.log('Usuario:', auth?.user);
@@ -24,8 +45,6 @@ export default function ChatPage() {
       return;
     }
 
-    const userId = auth?.user?.idUsuario || auth?.user?.id;
-    
     // Conectar WebSocket
     connectWebSocket();
 
@@ -39,24 +58,41 @@ export default function ChatPage() {
 
     // Cleanup al desmontar
     return () => {
+      console.log('Desconectando WebSocket al desmontar ChatPage');
       webSocketService.disconnect();
     };
-  }, [auth?.user?.idUsuario, auth?.user?.id, searchParams]);
+  }, [connectWebSocket, searchParams, setSearchParams]);
 
+  // Efecto separado para manejar eventos de WebSocket
   useEffect(() => {
+    // Función para refrescar la lista de chats
+    const refreshChats = () => {
+      console.log('Refrescando lista de chats...');
+      setRefreshTrigger(prev => prev + 1);
+    };
+
     // Listener para eventos de notificación de chat
     const handleChatNotification = (event) => {
-      console.log('Notificación de chat recibida:', event.detail);
+      const messageData = event.detail;
+      console.log('ChatPage - Notificación de chat recibida:', messageData);
+      
       // Refrescar la lista de chats para mostrar nuevos mensajes
-      setRefreshTrigger(prev => prev + 1);
+      refreshChats();
+      
+      // Si el mensaje es para el chat actual, no necesitamos hacer nada más
+      // porque ChatWindow ya se encarga de actualizar los mensajes
     };
 
     // Listener para confirmaciones de lectura
     const handleMessagesRead = (event) => {
-      console.log('Mensajes marcados como leídos:', event.detail);
-      setRefreshTrigger(prev => prev + 1);
+      const readData = event.detail;
+      console.log('ChatPage - Mensajes marcados como leídos:', readData);
+      
+      // Refrescar la lista para actualizar contadores de mensajes no leídos
+      refreshChats();
     };
 
+    // Agregar listeners
     window.addEventListener('chatNotification', handleChatNotification);
     window.addEventListener('messagesRead', handleMessagesRead);
 
@@ -66,26 +102,11 @@ export default function ChatPage() {
     };
   }, []);
 
-  const connectWebSocket = async () => {
-    try {
-      setConnectionStatus('connecting');
-      
-      webSocketService.setConnectionChangeHandler((connected) => {
-        setConnectionStatus(connected ? 'connected' : 'disconnected');
-      });
+  const loadSpecificChat = useCallback(async (chatId) => {
+    const userId = auth?.user?.idUsuario || auth?.user?.id;
+    if (!userId) return;
 
-      const userId = auth.user.idUsuario || auth.user.id;
-      await webSocketService.connect(userId);
-      console.log('WebSocket conectado exitosamente');
-    } catch (error) {
-      console.error('Error al conectar WebSocket:', error);
-      setConnectionStatus('error');
-    }
-  };
-
-  const loadSpecificChat = async (chatId) => {
     try {
-      const userId = auth.user.idUsuario || auth.user.id;
       // Cargar todos los chats del usuario para encontrar el específico
       const chats = await chatApi.getChatsByUser(userId);
       const specificChat = chats.find(chat => chat.idChat === chatId);
@@ -97,7 +118,7 @@ export default function ChatPage() {
     } catch (error) {
       console.error('Error al cargar chat específico:', error);
     }
-  };
+  }, [auth?.user?.idUsuario, auth?.user?.id]);
 
   const handleChatSelect = (chat) => {
     setSelectedChat(chat);
