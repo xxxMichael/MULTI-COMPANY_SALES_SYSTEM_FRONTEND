@@ -34,9 +34,10 @@ export default function ProductCard({ product, onProductClick }) {
 
   // Cargar estado inicial SOLO si no está en el store
   useEffect(() => {
-    if (auth?.user?.id && !favoritesState.has(product.idProducto)) {
-      loadInterestState();
-    }
+    // NOTE: avoid per-card fetching of interest state to prevent race conditions
+    // The page (MarketplacePage) is responsible for prefetching interest state
+    // for visible products and populating `favoritesStateAtom`.
+    // We still load the interest count if missing.
     if (!favoritesCount.has(product.idProducto)) {
       loadInterestCount();
     }

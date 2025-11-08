@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import AdminCreateModeratorPage from "./pages/AdminCreateModeratorPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
 import WelcomePage from "./pages/WelcomePage";
 import MarketplacePage from "./pages/MarketplacePage";
 import MyProductsPage from "./pages/MyProductsPage";
@@ -12,6 +13,7 @@ import ChatPage from "./pages/ChatPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RecoverPasswordPage from "./pages/RecoverPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import EditProfilePage from "./pages/EditProfilePage";
 
 export default function App() {
   return (
@@ -25,8 +27,24 @@ export default function App() {
           path="/admin/create-moderator"
           element={<AdminCreateModeratorPage />}
         />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute requiredRole={["ADMIN", "MODERATOR"]}>
+              <AdminUsersPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/recover-password" element={<RecoverPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route
+          path="/edit-profile"
+          element={
+            <ProtectedRoute>
+              <EditProfilePage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/marketplace"

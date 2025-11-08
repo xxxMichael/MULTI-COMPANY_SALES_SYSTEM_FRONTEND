@@ -453,6 +453,22 @@ export default function ProductDetailModal({ product, onClose }) {
                   <span className="ml-2 break-words max-w-full">{product.nombreVendedor}</span>
                 </div>
 
+                {product.horario && (
+                  <div className="flex items-center text-slate-300">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-3 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="font-medium">Horario:</span>
+                    <span className="ml-2 break-words max-w-full">{product.horario}</span>
+                  </div>
+                )}
+
                 <div className="flex items-center text-slate-300">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
