@@ -6,17 +6,36 @@ import { productsApi, interestApi } from "../../api/products";
 import { getAuth } from "../../state/auth";
 import { favoritesStateAtom, favoritesCountAtom } from "../../state/favorites";
 import ChatButton from "../chat/ChatButton";
+import ReportProductModal from "./ReportProductModal";
 
 export default function ProductCard({ product, onProductClick }) {
   const [favoritesState, setFavoritesState] = useAtom(favoritesStateAtom);
   const [favoritesCount, setFavoritesCount] = useAtom(favoritesCountAtom);
   const [loading, setLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const auth = getAuth();
 
   const handleReport = (e) => {
     e.stopPropagation();
-    alert(`Reportar producto: "${product.nombre}"\n\nFuncionalidad en desarrollo.`);
+    
+    if (!auth?.user?.id && !auth?.user?.idUsuario) {
+      alert('Debes iniciar sesión para reportar productos');
+      return;
+    }
+
+    // No permitir reportar productos propios
+    if ((auth.user.id || auth.user.idUsuario) === product.idVendedor) {
+      alert('No puedes reportar tus propios productos');
+      return;
+    }
+
+    setShowReportModal(true);
+  };
+
+  const handleReportSubmitted = (reportData) => {
+    console.log("✅ Reporte enviado desde card:", reportData);
+    // Aquí podrías actualizar algún estado global o mostrar información adicional
   };
 
   const mainPhoto = product.fotos && product.fotos.length > 0 ? product.fotos[0] : null;
@@ -173,14 +192,16 @@ export default function ProductCard({ product, onProductClick }) {
       <div className="relative rounded-2xl border border-slate-800/50 bg-slate-900/90 backdrop-blur-xl shadow-2xl overflow-hidden transition-shadow duration-300 cursor-pointer">
         {/* Botones superiores */}
         <div className="absolute top-3 right-3 z-10 flex gap-2">
-          {/* Botón de reportar */}
-          <button
-            onClick={handleReport}
-            className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 bg-white/5 text-slate-300 hover:bg-orange-500/20 hover:text-orange-400 hover:scale-110 backdrop-blur-md"
-            title="Reportar producto"
-          >
-            <Flag className="w-5 h-5" />
-          </button>
+          {/* Botón de reportar - Solo mostrar si no es el propio producto */}
+          {(auth?.user?.idUsuario || auth?.user?.id) && (auth.user.idUsuario || auth.user.id) !== product.idVendedor && (
+            <button
+              onClick={handleReport}
+              className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 bg-white/5 text-slate-300 hover:bg-orange-500/20 hover:text-orange-400 hover:scale-110 backdrop-blur-md"
+              title="Reportar producto"
+            >
+              <Flag className="w-5 h-5" />
+            </button>
+          )}
 
           {/* Botón de favorito */}
           <button
@@ -353,6 +374,15 @@ export default function ProductCard({ product, onProductClick }) {
           </div>
         </div>
       </div>
+
+      {/* Modal de reporte */}
+      {showReportModal && (
+        <ReportProductModal
+          product={product}
+          onClose={() => setShowReportModal(false)}
+          onReportSubmitted={handleReportSubmitted}
+        />
+      )}
     </div>
   );
 }

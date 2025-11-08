@@ -14,6 +14,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import RecoverPasswordPage from "./pages/RecoverPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import EditProfilePage from "./pages/EditProfilePage";
+import NotificationContainer from "./components/ui/NotificationContainer";
 
 export default function App() {
   return (
@@ -94,6 +95,9 @@ export default function App() {
         {/* 404 */}
         <Route path="*" element={<Navigate to="/marketplace" replace />} />
       </Routes>
+
+      {/* Contenedor de notificaciones global */}
+      <NotificationContainer />
     </BrowserRouter>
   );
 }
