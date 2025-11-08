@@ -9,6 +9,7 @@ import WelcomePage from "./pages/WelcomePage";
 import MarketplacePage from "./pages/MarketplacePage";
 import MyProductsPage from "./pages/MyProductsPage";
 import CreateProductPage from "./pages/CreateProductPage";
+import ChatPage from "./pages/ChatPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RecoverPasswordPage from "./pages/RecoverPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -77,6 +78,15 @@ export default function App() {
           element={
             <ProtectedRoute>
               <CreateProductPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <ChatPage />
             </ProtectedRoute>
           }
         />

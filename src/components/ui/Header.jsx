@@ -2,6 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { getAuth, clearAuth } from "../../state/auth";
 import { useState, useRef, useEffect } from "react";
+import { useChatNotifications } from "../../hooks/useChatNotifications";
 import {
   UserRound,
   Mail,
@@ -14,11 +15,14 @@ import {
   LogOut,
   UserCog,
   ChevronDown,
+  MessageSquare,
 } from "lucide-react";
 
 export default function Header() {
   const navigate = useNavigate();
   const auth = getAuth();
+  const { unreadCount } = useChatNotifications();
+
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
@@ -31,8 +35,7 @@ export default function Header() {
     auth?.user?.correo ||
     "Usuario";
   const email = auth?.user?.correo || "";
-  const initial = (auth?.user?.nombre?.[0] || auth?.user?.correo?.[0] || "U")
-    .toUpperCase();
+  const initial = (auth?.user?.nombre?.[0] || auth?.user?.correo?.[0] || "U").toUpperCase();
 
   const handleLogout = () => {
     clearAuth();
@@ -117,6 +120,21 @@ export default function Header() {
               </button>
             )}
 
+            {/* Chat con contador */}
+            {isLogged && (
+              <button
+                onClick={() => navigate("/chat")}
+                className="relative text-slate-300 hover:text-slate-50 font-medium transition-colors"
+              >
+                Chat
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-3 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full min-w-[20px] h-[20px]">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </button>
+            )}
+
             {(role === "ADMIN" || role === "MODERATOR") && (
               <button
                 onClick={() => navigate("/admin/users")}
@@ -136,13 +154,6 @@ export default function Header() {
 
           {/* Acciones */}
           <div className="flex items-center gap-3">
-            {/* (opcional) carrito
-            <button className="p-2 text-slate-300 hover:text-slate-50 transition-colors" title="Carrito">
-              <ShoppingCart className="h-6 w-6" />
-            </button> 
-            */}
-
-            {/* Perfil / Auth */}
             {!isLogged ? (
               <div className="flex items-center gap-2">
                 <button
@@ -168,11 +179,9 @@ export default function Header() {
                   aria-expanded={open}
                   aria-label="Abrir menú de usuario"
                 >
-                  {/* Avatar */}
                   <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-violet-600 text-white flex items-center justify-center font-semibold">
                     {initial}
                   </div>
-                  {/* Nombre y email (desktop) */}
                   <div className="hidden sm:flex flex-col items-start">
                     <span className="text-slate-100 text-sm leading-tight font-medium max-w-[140px] truncate">
                       {fullName}
@@ -185,13 +194,11 @@ export default function Header() {
                   <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-slate-200" />
                 </button>
 
-                {/* Dropdown */}
                 {open && (
                   <div
                     role="menu"
                     className="absolute right-0 mt-2 w-72 bg-slate-900/95 border border-slate-700 rounded-xl shadow-xl backdrop-blur-sm"
                   >
-                    {/* Tarjeta usuario */}
                     <div className="p-4 border-b border-slate-700">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-violet-600 text-white flex items-center justify-center font-semibold">
@@ -212,32 +219,37 @@ export default function Header() {
                       </div>
                     </div>
 
-                    {/* Acciones rápidas */}
                     <div className="p-2">
                       <MenuItem
                         icon={<UserCog className="h-4 w-4" />}
                         label="Editar perfil"
                         onClick={() => goto("/edit-profile")}
                       />
+                      <MenuItem
+                        icon={<Package className="h-4 w-4" />}
+                        label="Mis productos"
+                        onClick={() => goto("/my-products")}
+                      />
+                      <MenuItem
+                        icon={<MessageSquare className="h-4 w-4" />}
+                        label={`Chat ${unreadCount > 0 ? `(${unreadCount})` : ""}`}
+                        onClick={() => goto("/chat")}
+                      />
                     </div>
 
-                    {/* Sección de actividad */}
-                    <div className="px-2 pb-2">
-                      {(role === "ADMIN" || role === "MODERATOR") && (
-                        <>
-                          <div className="px-2 py-1 text-[11px] uppercase tracking-wide text-slate-500 mt-2">
-                            Administración
-                          </div>
-                          <MenuItem
-                            icon={<UserCog className="h-4 w-4" />}
-                            label="Usuarios"
-                            onClick={() => goto("/admin/users")}
-                          />
-                        </>
-                      )}
-                    </div>
+                    {(role === "ADMIN" || role === "MODERATOR") && (
+                      <div className="px-2 pb-2">
+                        <div className="px-2 py-1 text-[11px] uppercase tracking-wide text-slate-500 mt-2">
+                          Administración
+                        </div>
+                        <MenuItem
+                          icon={<Shield className="h-4 w-4" />}
+                          label="Usuarios"
+                          onClick={() => goto("/admin/users")}
+                        />
+                      </div>
+                    )}
 
-                    {/* Footer */}
                     <div className="p-2 border-t border-slate-700">
                       <button
                         onClick={handleLogout}
