@@ -298,6 +298,28 @@ export default function MyProductsPage() {
     setAppealLoading(true);
 
     try {
+      const baseReason = `Solicitud de apelación enviada por el vendedor (${auth?.user?.nombre ?? ""})`;
+
+      if (appealProduct.estado === "OCULTO") {
+        try {
+          await productManagementApi.changeState({
+            productoId: appealProduct.idProducto,
+            nuevoEstado: "PROHIBIDO",
+            motivo: `${baseReason}. Detalle: ${justification}`.slice(0, 240),
+            usuarioId: userId,
+          });
+        } catch (stateErr) {
+          console.error("Error al preparar producto para apelación:", stateErr);
+          const message =
+            stateErr?.response?.data?.mensaje ||
+            stateErr?.response?.data?.error ||
+            "No se pudo solicitar la apelación para este producto";
+          notify.error(message);
+          setAppealLoading(false);
+          return;
+        }
+      }
+
       await productManagementApi.createAppeal({
         productoId: appealProduct.idProducto,
         vendedorId: userId,
