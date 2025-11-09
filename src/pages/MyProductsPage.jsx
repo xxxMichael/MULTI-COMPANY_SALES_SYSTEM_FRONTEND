@@ -9,11 +9,15 @@ import MyProductsFilter from "../components/ui/MyProductsFilter";
 import Pagination from "../components/ui/Pagination";
 import ConfirmModal from "../components/ui/ConfirmModal";
 import { myProductsApi, interestApi, productsApi } from "../api/products";
+import { productManagementApi } from "../api/productManagement";
+import AppealModal from "../components/ui/AppealModal";
+import { useNotifications } from "../hooks/useNotifications";
 import { getAuth } from "../state/auth";
 
 export default function MyProductsPage() {
   const navigate = useNavigate();
   const auth = getAuth();
+  const { notify } = useNotifications();
   const userId = auth?.user?.id;
 
   const [products, setProducts] = useState([]);
@@ -42,6 +46,11 @@ export default function MyProductsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Apelaciones
+  const [appealProduct, setAppealProduct] = useState(null);
+  const [appealOpen, setAppealOpen] = useState(false);
+  const [appealLoading, setAppealLoading] = useState(false);
 
   // Estadísticas
   const [totalInterests, setTotalInterests] = useState(0);
@@ -145,11 +154,11 @@ export default function MyProductsPage() {
         };
 
         productsData = productsData.filter((product) => {
-          // Estado: si estamos viendo historial, dejamos ELIMINADO, sino solo ACTIVO/OCULTO
+          // Estado: si estamos viendo historial, dejamos ELIMINADO, sino estados visibles/gestionables
           if (showHistory) {
             if (product.estado !== "ELIMINADO") return false;
           } else {
-            if (!(product.estado === "ACTIVO" || product.estado === "OCULTO")) return false;
+            if (!["ACTIVO", "OCULTO", "PROHIBIDO", "APELADO"].includes(product.estado)) return false;
           }
 
           if (apiFilters.tipo && product.tipo !== apiFilters.tipo) return false;
@@ -191,8 +200,8 @@ export default function MyProductsPage() {
 
 
       if (!showHistory) {
-        productsData = productsData.filter(
-          (product) => product.estado === "ACTIVO" || product.estado === "OCULTO"
+        productsData = productsData.filter((product) =>
+          ["ACTIVO", "OCULTO", "PROHIBIDO", "APELADO"].includes(product.estado)
         );
       }
 
@@ -271,10 +280,45 @@ export default function MyProductsPage() {
   };
 
   const handleAppeal = (product) => {
-    // TODO: Implementar sistema de apelación
-    alert(
-      `Funcionalidad de apelación para "${product.nombre}" en desarrollo.\n\nEste producto está en estado: ${product.estado}`
-    );
+    if (!product) return;
+    if (product.estado === "APELADO") {
+      notify.info("Ya enviaste una apelación para este producto. Estamos revisando tu caso.");
+      return;
+    }
+    if (product.estado !== "PROHIBIDO" && product.estado !== "OCULTO") {
+      notify.info("Solo puedes apelar productos bloqueados u ocultos por revisión.");
+      return;
+    }
+    setAppealProduct(product);
+    setAppealOpen(true);
+  };
+
+  const submitAppeal = async ({ justification, comments }) => {
+    if (!appealProduct || !userId) return;
+    setAppealLoading(true);
+
+    try {
+      await productManagementApi.createAppeal({
+        productoId: appealProduct.idProducto,
+        vendedorId: userId,
+        justificacion: justification,
+        comentarios: comments,
+      });
+
+      notify.success("Tu apelación fue enviada. Revisaremos el caso lo antes posible.");
+      setAppealOpen(false);
+      setAppealProduct(null);
+      await loadProducts();
+    } catch (err) {
+      console.error("Error al enviar apelación:", err);
+      const message =
+        err?.response?.data?.mensaje ||
+        err?.response?.data?.error ||
+        "No se pudo enviar la apelación";
+      notify.error(message);
+    } finally {
+      setAppealLoading(false);
+    }
   };
 
   const handleSaveEdit = (updatedProduct) => {
@@ -544,6 +588,18 @@ export default function MyProductsPage() {
           onSave={handleSaveEdit}
         />
       )}
+
+      <AppealModal
+        open={appealOpen}
+        product={appealProduct}
+        loading={appealLoading}
+        onClose={() => {
+          if (appealLoading) return;
+          setAppealOpen(false);
+          setAppealProduct(null);
+        }}
+        onSubmit={submitAppeal}
+      />
 
       {/* Confirmación reutilizable para eliminar */}
       <ConfirmModal

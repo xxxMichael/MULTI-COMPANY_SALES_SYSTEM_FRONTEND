@@ -29,7 +29,10 @@ export default function MyProductCard({ product, onEdit, onDelete, onAppeal, onU
     ? productsApi.getImageUrl(product.fotos[0].url)
     : null;
 
-  const isEditable = product.estado !== "OCULTO" && product.estado !== "PROHIBIDO";
+  const isEditable =
+    product.estado !== "OCULTO" &&
+    product.estado !== "PROHIBIDO" &&
+    product.estado !== "APELADO";
 
   const getStatusBadge = () => {
     switch (product.estado) {
@@ -39,6 +42,8 @@ export default function MyProductCard({ product, onEdit, onDelete, onAppeal, onU
         return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
       case "PROHIBIDO":
         return "bg-red-500/20 text-red-400 border-red-500/30";
+      case "APELADO":
+        return "bg-purple-500/20 text-purple-300 border-purple-500/30";
       case "ELIMINADO":
         return "bg-gray-500/20 text-gray-400 border-gray-500/30";
       default:
@@ -49,6 +54,7 @@ export default function MyProductCard({ product, onEdit, onDelete, onAppeal, onU
   const getStatusIcon = () => {
     if (product.estado === "OCULTO") return <EyeOff className="w-3 h-3" />;
     if (product.estado === "PROHIBIDO") return <AlertTriangle className="w-3 h-3" />;
+    if (product.estado === "APELADO") return <AlertTriangle className="w-3 h-3" />;
     return <Eye className="w-3 h-3" />;
   };
 
@@ -58,6 +64,8 @@ export default function MyProductCard({ product, onEdit, onDelete, onAppeal, onU
         return "Producto oculto temporalmente (por revisión o expiración)";
       case "PROHIBIDO":
         return "Producto detectado como peligroso — No visible para compradores";
+      case "APELADO":
+        return "Apelación enviada. El equipo revisará tu solicitud";
       default:
         return "";
     }
@@ -136,13 +144,15 @@ export default function MyProductCard({ product, onEdit, onDelete, onAppeal, onU
             </span>
           </div>
 
-          {/* Mensaje de estado si es OCULTO o PROHIBIDO */}
-          {(product.estado === "OCULTO" || product.estado === "PROHIBIDO") && (
+          {/* Mensaje de estado si requiere atención */}
+          {(product.estado === "OCULTO" || product.estado === "PROHIBIDO" || product.estado === "APELADO") && (
             <div className="pt-2 border-t border-slate-800/50">
               <div className={`px-3 py-2 rounded-lg text-xs ${
                 product.estado === "OCULTO" 
                   ? "bg-yellow-500/10 text-yellow-300 border border-yellow-500/30" 
-                  : "bg-red-500/10 text-red-300 border border-red-500/30"
+                  : product.estado === "PROHIBIDO"
+                  ? "bg-red-500/10 text-red-300 border border-red-500/30"
+                  : "bg-purple-500/10 text-purple-300 border border-purple-500/30"
               }`}>
                 <p className="flex items-center gap-2">
                   <AlertTriangle className="w-3 h-3" />
@@ -188,6 +198,11 @@ export default function MyProductCard({ product, onEdit, onDelete, onAppeal, onU
                 <AlertTriangle className="w-4 h-4" />
                 Apelar
               </button>
+            )}
+            {product.estado === "APELADO" && (
+              <div className="flex-1 flex items-center justify-center px-4 py-2.5 bg-purple-500/10 text-purple-300 rounded-xl font-medium border border-purple-500/30">
+                En revisión
+              </div>
             )}
             {product.estado === "ELIMINADO" && (
               <div className="flex-1 flex items-center justify-center px-4 py-2.5 bg-gray-500/10 text-gray-400 rounded-xl font-medium border border-gray-500/30">
