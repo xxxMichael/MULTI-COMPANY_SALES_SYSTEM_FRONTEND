@@ -17,10 +17,12 @@ import RecoverPasswordPage from "./pages/RecoverPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import EditProfilePage from "./pages/EditProfilePage";
 import NotificationContainer from "./components/ui/NotificationContainer";
+import WebSocketManager from "./components/WebSocketManager";
 
 export default function App() {
   return (
     <BrowserRouter>
+      <WebSocketManager />
       <Routes>
         <Route path="/" element={<Navigate to="/marketplace" replace />} />
         <Route path="/login" element={<LoginPage />} />

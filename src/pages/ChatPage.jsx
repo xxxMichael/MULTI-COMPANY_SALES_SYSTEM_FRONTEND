@@ -21,7 +21,7 @@ export default function ChatPage() {
     if (!userId) return;
 
     try {
-      setConnectionStatus('connecting');
+      setConnectionStatus(webSocketService.isConnected() ? 'connected' : 'connecting');
       
       webSocketService.setConnectionChangeHandler((connected) => {
         setConnectionStatus(connected ? 'connected' : 'disconnected');
@@ -58,8 +58,7 @@ export default function ChatPage() {
 
     // Cleanup al desmontar
     return () => {
-      console.log('Desconectando WebSocket al desmontar ChatPage');
-      webSocketService.disconnect();
+      webSocketService.setConnectionChangeHandler(null);
     };
   }, [connectWebSocket, searchParams, setSearchParams]);
 
