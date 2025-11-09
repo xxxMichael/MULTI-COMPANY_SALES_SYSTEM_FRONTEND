@@ -196,7 +196,7 @@ export default function ModerationDetailsModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-6xl max-h-[92vh] overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/90 shadow-2xl backdrop-blur"
+        className="relative flex w-full max-w-6xl max-h-[92vh] flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/90 shadow-2xl backdrop-blur"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-800/80 bg-slate-950/95 px-6 py-4">
@@ -230,7 +230,7 @@ export default function ModerationDetailsModal({
           </button>
         </header>
 
-        <div className="flex h-full flex-col overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           <div className="space-y-8 px-6 py-6">
             <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <div className="space-y-4">
