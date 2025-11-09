@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, Search, UserCheck, CheckCircle, XCircle } from "lucide-react";
+import { RefreshCw, Search, UserCheck, CheckCircle, XCircle, Eye } from "lucide-react";
 import Header from "../components/ui/Header";
 import Pagination from "../components/ui/Pagination";
 import ModerationActionModal from "../components/ui/ModerationActionModal";
+import ModerationDetailsModal from "../components/ui/ModerationDetailsModal";
 import { productsApi } from "../api/products";
 import { reportsApi, moderationReportsApi } from "../api/reports";
 import { productManagementApi } from "../api/productManagement";
@@ -57,6 +58,7 @@ export default function AdminAppealsPage() {
   const [selected, setSelected] = useState(null);
   const [actionType, setActionType] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [detail, setDetail] = useState(null);
 
   const { notify } = useNotifications();
   const auth = getAuth();
@@ -96,16 +98,19 @@ export default function AdminAppealsPage() {
             ? groupedReports[incident.idIncidencia][0]
             : null;
 
+          const history = incident && groupedReports[incident.idIncidencia] ? groupedReports[incident.idIncidencia] : [];
+
           return {
             product,
             incident,
             lastReport,
+            history,
           };
         });
 
       appealsData.sort((a, b) => new Date(b.product.fechaPublicacion) - new Date(a.product.fechaPublicacion));
 
-  setAppeals(appealsData);
+      setAppeals(appealsData);
     } catch (err) {
       console.error("Error cargando apelaciones:", err);
       notify.error("No se pudieron cargar las apelaciones");
@@ -160,6 +165,32 @@ export default function AdminAppealsPage() {
     if (actionLoading) return;
     setSelected(null);
     setActionType(null);
+  };
+
+  const openDetailModal = (appeal) => {
+    if (!appeal || !appeal.product) return;
+
+    const product = appeal.product;
+    const nestedAppeal = product.apelacion || appeal.apelacion || null;
+
+    const appealMetadata = {
+      appeal: nestedAppeal,
+      product,
+      lastReport: appeal.lastReport,
+    };
+
+    setDetail({
+      productId: product.idProducto,
+      product,
+      incident: appeal.incident,
+      history: appeal.history || [],
+      context: "appeal",
+      appealInfo: appealMetadata,
+    });
+  };
+
+  const closeDetailModal = () => {
+    setDetail(null);
   };
 
   const executeAction = async ({ reason, comment }) => {
@@ -353,6 +384,14 @@ export default function AdminAppealsPage() {
                     <div className="flex flex-col gap-3 min-w-[200px]">
                       <button
                         type="button"
+                        onClick={() => openDetailModal(appeal)}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-800/70 border border-slate-700 text-slate-200 hover:bg-slate-700/80"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Ver detalles
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => openActionModal(appeal, "approve")}
                         className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-green-500/15 border border-green-400/40 text-green-200 hover:bg-green-500/25"
                       >
@@ -407,6 +446,17 @@ export default function AdminAppealsPage() {
         loading={actionLoading}
         onClose={closeActionModal}
         onConfirm={executeAction}
+      />
+
+      <ModerationDetailsModal
+        open={Boolean(detail)}
+        onClose={closeDetailModal}
+        productId={detail?.productId}
+        product={detail?.product}
+        incident={detail?.incident}
+        history={detail?.history}
+        context={detail?.context}
+        appealInfo={detail?.appealInfo}
       />
     </div>
   );

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Ban, RefreshCw, Search, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Check, Ban, RefreshCw, Search, AlertTriangle, ShieldCheck, Eye } from "lucide-react";
 import Header from "../components/ui/Header";
 import Pagination from "../components/ui/Pagination";
 import ModerationActionModal from "../components/ui/ModerationActionModal";
+import ModerationDetailsModal from "../components/ui/ModerationDetailsModal";
 import { reportsApi, moderationReportsApi } from "../api/reports";
 import { productManagementApi } from "../api/productManagement";
 import { useNotifications } from "../hooks/useNotifications";
@@ -36,6 +37,7 @@ export default function AdminIncidentsPage() {
   const [selected, setSelected] = useState(null);
   const [actionType, setActionType] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [detail, setDetail] = useState(null);
 
   const { notify } = useNotifications();
   const auth = getAuth();
@@ -127,6 +129,21 @@ export default function AdminIncidentsPage() {
     if (actionLoading) return;
     setSelected(null);
     setActionType(null);
+  };
+
+  const openDetailModal = (incident) => {
+    if (!incident) return;
+    setDetail({
+      productId: incident.idProducto,
+      product: null,
+      incident,
+      history: reportsMap[incident.idIncidencia] || [],
+      context: "incident",
+    });
+  };
+
+  const closeDetailModal = () => {
+    setDetail(null);
   };
 
   const executeAction = async ({ reason, comment }) => {
@@ -314,6 +331,14 @@ export default function AdminIncidentsPage() {
                           </td>
                           <td className="px-4 py-4 align-top">
                             <div className="flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openDetailModal(incident)}
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/70 border border-slate-700 text-slate-200 hover:bg-slate-700/80"
+                              >
+                                <Eye className="w-4 h-4" />
+                                Ver producto
+                              </button>
                               {incident.estado === "PENDIENTE" ? (
                                 <>
                                   <button
@@ -383,6 +408,16 @@ export default function AdminIncidentsPage() {
         loading={actionLoading}
         onClose={closeActionModal}
         onConfirm={executeAction}
+      />
+
+      <ModerationDetailsModal
+        open={Boolean(detail)}
+        onClose={closeDetailModal}
+        productId={detail?.productId}
+        product={detail?.product}
+        incident={detail?.incident}
+        history={detail?.history}
+        context={detail?.context}
       />
     </div>
   );
