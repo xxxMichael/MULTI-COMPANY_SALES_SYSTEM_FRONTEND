@@ -8,19 +8,32 @@ class WebSocketService {
     this.subscriptions = new Map();
     this.messageHandlers = new Map();
     this.onConnectionChange = null;
+    this.userId = null;
+    this.connectPromise = null;
   }
 
   connect(userId) {
-    return new Promise((resolve, reject) => {
+    if (this.connected && this.userId === userId) {
+      if (this.onConnectionChange) {
+        this.onConnectionChange(true);
+      }
+      return Promise.resolve({ reused: true });
+    }
+
+    if (this.connectPromise) {
+      return this.connectPromise;
+    }
+
+    this.connectPromise = new Promise((resolve, reject) => {
       try {
         // Crear conexión SockJS
         const socket = new SockJS(
           `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/ws-chat`
         );
-        
+
         // Crear cliente STOMP
         this.client = Stomp.over(socket);
-        
+
         // Deshabilitar debug en producción
         this.client.debug = (str) => {
           if (import.meta.env.DEV) {
@@ -35,24 +48,24 @@ class WebSocketService {
             console.log('WebSocket conectado:', frame);
             this.connected = true;
             this.userId = userId;
-            
+
             if (this.onConnectionChange) {
               this.onConnectionChange(true);
             }
-            
+
             // Suscribirse a notificaciones personales del usuario
             this.subscribeToUserNotifications(userId);
-            
+
             resolve(frame);
           },
           (error) => {
             console.error('Error de conexión WebSocket:', error);
             this.connected = false;
-            
+
             if (this.onConnectionChange) {
               this.onConnectionChange(false);
             }
-            
+
             reject(error);
           }
         );
@@ -60,7 +73,11 @@ class WebSocketService {
         console.error('Error al crear conexión WebSocket:', error);
         reject(error);
       }
+    }).finally(() => {
+      this.connectPromise = null;
     });
+
+    return this.connectPromise;
   }
 
   disconnect() {
@@ -75,6 +92,8 @@ class WebSocketService {
       this.client.disconnect(() => {
         console.log('WebSocket desconectado');
         this.connected = false;
+        this.userId = null;
+        this.connectPromise = null;
         if (this.onConnectionChange) {
           this.onConnectionChange(false);
         }
@@ -205,6 +224,10 @@ class WebSocketService {
   // Verificar estado de conexión
   isConnected() {
     return this.connected;
+  }
+
+  getConnectedUserId() {
+    return this.userId;
   }
 
   // Configurar callback para cambios de conexión

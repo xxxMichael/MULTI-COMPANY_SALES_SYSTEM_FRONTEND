@@ -136,20 +136,27 @@ export default function Header() {
             )}
 
             {(role === "ADMIN" || role === "MODERATOR") && (
-              <button
-                onClick={() => navigate("/admin/users")}
-                className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
-              >
-                Gestión Usuarios
-              </button>
+              <>
+                <button
+                  onClick={() => navigate("/admin/users")}
+                  className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
+                >
+                  Gestión Usuarios
+                </button>
+                <button
+                  onClick={() => navigate("/admin/incidents")}
+                  className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
+                >
+                  Incidencias
+                </button>
+                <button
+                  onClick={() => navigate("/admin/appeals")}
+                  className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
+                >
+                  Apelaciones
+                </button>
+              </>
             )}
-
-            <button
-              onClick={() => navigate("/contact")}
-              className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
-            >
-              Contacto
-            </button>
           </nav>
 
           {/* Acciones */}
@@ -246,6 +253,16 @@ export default function Header() {
                           icon={<Shield className="h-4 w-4" />}
                           label="Usuarios"
                           onClick={() => goto("/admin/users")}
+                        />
+                        <MenuItem
+                          icon={<Shield className="h-4 w-4" />}
+                          label="Incidencias"
+                          onClick={() => goto("/admin/incidents")}
+                        />
+                        <MenuItem
+                          icon={<Shield className="h-4 w-4" />}
+                          label="Apelaciones"
+                          onClick={() => goto("/admin/appeals")}
                         />
                       </div>
                     )}

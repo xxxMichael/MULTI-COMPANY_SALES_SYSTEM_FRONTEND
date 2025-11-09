@@ -8,6 +8,7 @@ import Input from "../components/ui/Input";
 import { productsApi, myProductsApi } from "../api/products";
 import { categoriesApi } from "../api/products";
 import { getAuth } from "../state/auth";
+import { useNotifications } from "../hooks/useNotifications";
 
 export default function CreateProductPage() {
   const [categories, setCategories] = useState([]);
@@ -25,6 +26,7 @@ export default function CreateProductPage() {
   const navigate = useNavigate();
   const auth = getAuth();
   const userId = auth?.user?.id;
+  const { notify } = useNotifications();
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -119,11 +121,19 @@ export default function CreateProductPage() {
     setError("");
     setSuccess(false);
 
+    // Mostrar modal de carga inmediatamente
+    setResultModal({
+      open: true,
+      success: false,
+      message: "",
+    });
+
     try {
       // Validación
       if (!formData.nombre || !formData.precio || !formData.ubicacion) {
         setError("Por favor completa todos los campos requeridos");
         setLoading(false);
+        setResultModal({ open: false, success: false, message: "" });
         return;
       }
 
@@ -148,16 +158,54 @@ export default function CreateProductPage() {
         response = await myProductsApi.create(productData);
       }
 
-      setSuccess(true);
-      // Mostrar modal de éxito
-      setResultModal({
-        open: true,
-        success: true,
-        message:
-          productData.tipo === "PRODUCTO"
-            ? "Producto creado exitosamente."
-            : "Servicio creado exitosamente.",
-      });
+      console.log('✅ Producto creado:', response.data);
+
+      // Analizar la respuesta para determinar el tipo de notificación
+      const createdProduct = response.data;
+      const isService = productData.tipo === "SERVICIO";
+      
+      if (createdProduct.estado === "PUBLICADO") {
+        // Producto creado y publicado exitosamente
+        try {
+          notify.success(
+            `${isService ? 'Servicio' : 'Producto'} creado y publicado exitosamente. Ya está visible para otros usuarios.`,
+            {
+              title: `${isService ? 'Servicio' : 'Producto'} publicado`,
+              duration: 6000
+            }
+          );
+        } catch (notifyError) {
+          console.warn('Error mostrando notificación:', notifyError);
+        }
+        
+      } else if (createdProduct.estado === "OCULTO") {
+        // Producto creado pero fue ocultado por contenido prohibido
+        try {
+          notify.warning(
+            `Tu ${isService ? 'servicio' : 'producto'} "${createdProduct.nombre}" fue creado pero está oculto debido a contenido detectado como inapropiado. Nuestro equipo lo revisará pronto.`,
+            {
+              title: `${isService ? 'Servicio' : 'Producto'} en revisión`,
+              duration: 10000 // Más tiempo para leer
+            }
+          );
+        } catch (notifyError) {
+          console.warn('Error mostrando notificación:', notifyError);
+        }
+        
+      } else {
+        // Estado desconocido - fallback a éxito genérico
+        try {
+          notify.success(
+            `${isService ? 'Servicio' : 'Producto'} creado exitosamente.`,
+            {
+              title: `${isService ? 'Servicio' : 'Producto'} creado`,
+              duration: 5000
+            }
+          );
+        } catch (notifyError) {
+          console.warn('Error mostrando notificación:', notifyError);
+        }
+      }
 
       // Limpiar formulario
       setFormData({
@@ -173,18 +221,38 @@ export default function CreateProductPage() {
       });
       setFiles([]);
       setPreviewUrls([]);
-      // Redireccionar después de 2 segundos
+      
+      // Redireccionar después de 3 segundos para dar tiempo a leer la notificación
+      // El modal permanece hasta que se complete la redirección
       setTimeout(() => {
         navigate("/my-products");
-      }, 2000);
+      }, 3000);
+      
     } catch (err) {
       console.error("Error al crear producto:", err);
       const errMsg =
         err.response?.data?.error ||
         err.response?.data?.mensaje ||
+        err.response?.data?.message ||
         "Error al crear el producto. Por favor intenta de nuevo.";
+      
+      // Mostrar notificación de error
+      try {
+        notify.error(errMsg, { 
+          title: 'Error al crear producto',
+          duration: 8000 
+        });
+      } catch (notifyError) {
+        console.warn('Error mostrando notificación:', notifyError);
+      }
+      
       setError(errMsg);
-      setResultModal({ open: true, success: false, message: errMsg });
+      
+      // Cerrar modal solo en caso de error después de 1 segundo
+      setTimeout(() => {
+        setResultModal({ open: false, success: false, message: "" });
+      }, 1000);
+      
     } finally {
       setLoading(false);
     }
@@ -462,28 +530,36 @@ export default function CreateProductPage() {
         </div>
       </div>
 
-      {/* Result modal (centered) */}
+      {/* Loading modal (centered) */}
       {resultModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" />
-          <div className="relative bg-slate-900 rounded-2xl border border-slate-800/60 p-6 max-w-md w-full mx-4 shadow-2xl z-10">
-            <h3
-              className={`text-lg font-semibold mb-2 ${
-                resultModal.success ? "text-green-400" : "text-red-400"
-              }`}
-            >
-              {resultModal.success ? "Éxito" : "Error"}
-            </h3>
-            <p className="text-slate-200 mb-4">{resultModal.message}</p>
-            <div className="flex justify-end">
-              <button
-                onClick={() => {
-                  setResultModal({ open: false, success: false, message: "" });
-                }}
-                className="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200"
-              >
-                Cerrar
-              </button>
+          <div className="relative bg-slate-900 rounded-2xl border border-slate-800/60 p-8 max-w-sm w-full mx-4 shadow-2xl z-10">
+            <div className="flex flex-col items-center gap-4">
+              {/* Spinner de carga */}
+              <div className="w-12 h-12">
+                <svg
+                  className="animate-spin h-12 w-12 text-blue-500"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              </div>
+              <p className="text-slate-200 text-lg font-medium">Cargando...</p>
             </div>
           </div>
         </div>

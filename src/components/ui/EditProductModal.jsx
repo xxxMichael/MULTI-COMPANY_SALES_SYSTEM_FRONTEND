@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Upload, Trash2, Save } from "lucide-react";
 import { productsApi, myProductsApi, categoriesApi } from "../../api/products";
+import { useNotifications } from "../../hooks/useNotifications";
 import Button from "./Button";
 import { Input } from "./Input";
 export default function EditProductModal({ product, onClose, onSave }) {
@@ -24,6 +25,7 @@ export default function EditProductModal({ product, onClose, onSave }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [categories, setCategories] = useState([]);
+  const { notify } = useNotifications();
 
   useEffect(() => {
     if (product) {
@@ -159,7 +161,43 @@ export default function EditProductModal({ product, onClose, onSave }) {
         return;
       }
 
-      onSave(response.data);
+      const updatedProduct = response?.data;
+      const entityLabel = (updatedProduct?.tipo || formData.tipo) === "SERVICIO" ? "servicio" : "producto";
+  const displayName = updatedProduct?.nombre || formData.nombre || "";
+  const displayLabel = displayName ? `"${displayName}"` : entityLabel;
+      const status = updatedProduct?.estado;
+
+      try {
+        if (status === "OCULTO") {
+          notify.warning(
+            `Tu ${entityLabel} ${displayLabel} fue actualizado, pero quedó oculto automáticamente para revisión. Nuestro equipo verificará el contenido pronto.`,
+            {
+              title: `${entityLabel.charAt(0).toUpperCase() + entityLabel.slice(1)} en revisión`,
+              duration: 10000,
+            }
+          );
+        } else if (status === "PROHIBIDO") {
+          notify.warning(
+            `Tras la actualización, tu ${entityLabel} ${displayLabel} fue marcado como prohibido por los filtros automáticos. Revísalo y considera una apelación si corresponde.`,
+            {
+              title: `${entityLabel.charAt(0).toUpperCase() + entityLabel.slice(1)} marcado como prohibido`,
+              duration: 10000,
+            }
+          );
+        } else {
+          notify.success(
+            `${entityLabel.charAt(0).toUpperCase() + entityLabel.slice(1)} actualizado correctamente.`,
+            {
+              title: "Cambios guardados",
+              duration: 5000,
+            }
+          );
+        }
+      } catch (notifyErr) {
+        console.warn("Error mostrando notificación de edición:", notifyErr);
+      }
+
+      onSave(updatedProduct || product);
       onClose();
     } catch (err) {
       console.error("Error general al editar producto:", err);
