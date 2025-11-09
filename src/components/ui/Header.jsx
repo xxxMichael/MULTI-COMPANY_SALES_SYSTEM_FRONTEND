@@ -157,13 +157,6 @@ export default function Header() {
                 </button>
               </>
             )}
-
-            <button
-              onClick={() => navigate("/contact")}
-              className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
-            >
-              Contacto
-            </button>
           </nav>
 
           {/* Acciones */}
