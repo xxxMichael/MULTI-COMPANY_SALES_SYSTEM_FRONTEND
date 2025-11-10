@@ -155,6 +155,14 @@ export default function Header() {
                 >
                   Apelaciones
                 </button>
+                {role === "ADMIN" && (
+                  <button
+                    onClick={() => navigate("/admin/system")}
+                    className="text-slate-300 hover:text-slate-50 font-medium transition-colors"
+                  >
+                    Sistema
+                  </button>
+                )}
               </>
             )}
           </nav>
@@ -264,6 +272,13 @@ export default function Header() {
                           label="Apelaciones"
                           onClick={() => goto("/admin/appeals")}
                         />
+                        {role === "ADMIN" && (
+                          <MenuItem
+                            icon={<Settings className="h-4 w-4" />}
+                            label="Sistema"
+                            onClick={() => goto("/admin/system")}
+                          />
+                        )}
                       </div>
                     )}
 
