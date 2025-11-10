@@ -7,6 +7,7 @@ import AdminCreateModeratorPage from "./pages/AdminCreateModeratorPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminIncidentsPage from "./pages/AdminIncidentsPage";
 import AdminAppealsPage from "./pages/AdminAppealsPage";
+import AdminSystemPage from "./pages/AdminSystemPage";
 import WelcomePage from "./pages/WelcomePage";
 import MarketplacePage from "./pages/MarketplacePage";
 import MyProductsPage from "./pages/MyProductsPage";
@@ -53,6 +54,14 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole={["ADMIN", "MODERATOR"]}>
               <AdminAppealsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/system"
+          element={
+            <ProtectedRoute requiredRole={["ADMIN"]}>
+              <AdminSystemPage />
             </ProtectedRoute>
           }
         />
