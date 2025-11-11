@@ -23,5 +23,29 @@ dist-ssr
 *.sln
 *.sw?
 
-
+# Environment variables
 .env
+.env.local
+.env.production
+.env.development
+
+# Railway
+.railway
+
+# Build artifacts
+build/
+out/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Cache
+.cache/
+.parcel-cache/
+.vite/
+
+# OS
+Thumbs.db
+.DS_Store
+
