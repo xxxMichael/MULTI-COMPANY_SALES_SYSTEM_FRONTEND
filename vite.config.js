@@ -7,4 +7,27 @@ export default defineConfig({
   define: {
     global: 'globalThis',
   },
+  // Configuración para Railway y producción
+  server: {
+    host: '0.0.0.0',
+    port: process.env.PORT || 5173,
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: process.env.PORT || 4173,
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          axios: ['axios'],
+          websocket: ['sockjs-client', '@stomp/stompjs'],
+        },
+      },
+    },
+  },
 })
+
