@@ -13,7 +13,7 @@ export default function RecoverPasswordPage() {
 
     try {
       const res = await fetch(
-        `http://localhost:8080/api/users/recover-password?email=${encodeURIComponent(email)}`,
+        `${import.meta.env.VITE_API_BASE}/api/users/recover-password?email=${encodeURIComponent(email)}`,
         { method: "POST" }
       );
 

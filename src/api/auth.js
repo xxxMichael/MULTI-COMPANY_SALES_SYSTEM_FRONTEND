@@ -1,11 +1,6 @@
 import http from "./http";
 import { setAuth, getAuth } from "../state/auth";
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE ||
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:8080";
-
 /**
  * ============================
  *  AUTENTICACIÓN DE USUARIOS
@@ -21,13 +16,8 @@ export const registerUser = async (payload) => {
 // 🔹 Login de usuario con almacenamiento local del token
 export const login = async (payload) => {
   // Usar axios directamente para evitar el interceptor que requiere token
-  const API_BASE =
-    import.meta.env.VITE_API_BASE ||
-    import.meta.env.VITE_API_URL ||
-    "http://localhost:8080";
-
   try {
-    const response = await fetch(`${API_BASE}/api/users/login`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE}/api/users/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -127,7 +117,7 @@ export const updateMyProfile = async (payload) => {
  * ============================
  */
 export const resetPassword = (payload) =>
-  fetch(`${API_BASE}/api/users/reset-password`, {
+  fetch(`${import.meta.env.VITE_API_BASE}/api/users/reset-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

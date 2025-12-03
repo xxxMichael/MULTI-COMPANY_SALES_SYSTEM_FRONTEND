@@ -46,7 +46,7 @@ export default function VerifyEmailPage() {
     setLoading(true);
     setMsg("");
     try {
-      const res = await fetch("http://localhost:8080/api/users/verify-email", {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/users/verify-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ correo, code }),
@@ -83,7 +83,7 @@ export default function VerifyEmailPage() {
     setResending(true);
     setMsg("");
     try {
-      const res = await fetch("http://localhost:8080/api/users/resend-code", {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/users/resend-code`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ correo }),
