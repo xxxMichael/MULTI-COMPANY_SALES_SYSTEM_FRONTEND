@@ -27,8 +27,9 @@ class WebSocketService {
     this.connectPromise = new Promise((resolve, reject) => {
       try {
         // Crear conexión SockJS
+        const API_BASE = import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_URL;
         const socket = new SockJS(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/ws-chat`
+          `${API_BASE}/ws-chat`
         );
 
         // Crear cliente STOMP

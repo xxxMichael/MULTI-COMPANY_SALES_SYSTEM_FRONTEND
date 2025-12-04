@@ -3,8 +3,7 @@ import { setAuth, getAuth } from "../state/auth";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ||
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:8080";
+  import.meta.env.VITE_API_URL;
 
 /**
  * ============================
@@ -23,8 +22,7 @@ export const login = async (payload) => {
   // Usar axios directamente para evitar el interceptor que requiere token
   const API_BASE =
     import.meta.env.VITE_API_BASE ||
-    import.meta.env.VITE_API_URL ||
-    "http://localhost:8080";
+    import.meta.env.VITE_API_URL;
 
   try {
     const response = await fetch(`${API_BASE}/api/users/login`, {
