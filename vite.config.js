@@ -14,12 +14,13 @@ export default defineConfig({
   },
   preview: {
     host: '0.0.0.0',
-    port: process.env.PORT || 4173,
+    port: parseInt(process.env.PORT) || 4173,
     strictPort: false,
     allowedHosts: [
       'multi-companysalessystemfrontend-production.up.railway.app',
       '.railway.app',
       'localhost',
+      '127.0.0.1',
     ],
   },
   build: {
