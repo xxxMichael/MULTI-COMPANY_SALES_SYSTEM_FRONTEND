@@ -12,8 +12,9 @@ export default function RecoverPasswordPage() {
     setLoading(true);
 
     try {
+      const API_BASE = import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_URL;
       const res = await fetch(
-        `http://localhost:8080/api/users/recover-password?email=${encodeURIComponent(email)}`,
+        `${API_BASE}/api/users/recover-password?email=${encodeURIComponent(email)}`,
         { method: "POST" }
       );
 
