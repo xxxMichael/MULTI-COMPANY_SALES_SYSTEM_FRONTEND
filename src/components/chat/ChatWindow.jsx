@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import webSocketService from '../../api/websocket';
 import { chatApi } from '../../api/chat';
+import { valoracionesApi } from '../../api/valoraciones';
 import MessageInput from './MessageInput';
+import ValoracionModal from './ValoracionModal';
 
 export default function ChatWindow({ 
   chat, 
@@ -14,6 +16,21 @@ export default function ChatWindow({
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const lastChatIdRef = useRef(null);
+  
+  // Estados para valoraciones
+  const [estadisticas, setEstadisticas] = useState(null);
+  const [yaValorado, setYaValorado] = useState(false);
+  const [showValoracionModal, setShowValoracionModal] = useState(false);
+  const [loadingValoracion, setLoadingValoracion] = useState(false);
+
+  // Función para obtener el otro usuario
+  const getOtherUser = useCallback(() => {
+    if (!chat || !currentUserId) return null;
+    
+    return chat.idUsuario1 === currentUserId
+      ? { id: chat.idUsuario2, nombre: chat.nombreUsuario2 }
+      : { id: chat.idUsuario1, nombre: chat.nombreUsuario1 };
+  }, [chat, currentUserId]);
 
   // Función de carga de mensajes como callback
   const loadMessages = useCallback(async () => {
@@ -38,8 +55,41 @@ export default function ChatWindow({
       lastChatIdRef.current = chat.idChat;
       loadMessages();
       markMessagesAsRead();
+      loadValoracionData(); // Cargar datos de valoración
     }
   }, [chat?.idChat, loadMessages]);
+
+  // Cargar datos de valoración del vendedor
+  const loadValoracionData = useCallback(async () => {
+    const otherUser = getOtherUser();
+    if (!otherUser?.id) return;
+
+    setLoadingValoracion(true);
+    try {
+      // Cargar estadísticas del vendedor
+      const stats = await valoracionesApi.obtenerEstadisticasVendedor(otherUser.id);
+      setEstadisticas(stats);
+
+      // Verificar si ya se valoró a este vendedor
+      try {
+        const { yaValorado: valorado } = await valoracionesApi.verificarSiYaValorado(otherUser.id);
+        setYaValorado(valorado);
+      } catch (err) {
+        // Si no está autenticado o hay error, asumir que no ha valorado
+        setYaValorado(false);
+      }
+    } catch (err) {
+      console.error('Error al cargar datos de valoración:', err);
+      setEstadisticas(null);
+    } finally {
+      setLoadingValoracion(false);
+    }
+  }, [chat]);
+
+  const handleValoracionCreada = () => {
+    setYaValorado(true);
+    loadValoracionData(); // Recargar estadísticas
+  };
 
   // Efecto para suscripción a WebSocket
   useEffect(() => {
@@ -119,14 +169,6 @@ export default function ChatWindow({
     }
   };
 
-  const getOtherUser = () => {
-    if (!chat || !currentUserId) return null;
-    
-    return chat.idUsuario1 === currentUserId
-      ? { id: chat.idUsuario2, nombre: chat.nombreUsuario2 }
-      : { id: chat.idUsuario1, nombre: chat.nombreUsuario1 };
-  };
-
   const formatMessageTime = (dateString) => {
     if (!dateString) return '';
     
@@ -189,10 +231,10 @@ export default function ChatWindow({
 
   return (
     <div className="flex-1 bg-slate-900/50 backdrop-blur-xl flex flex-col border-l border-slate-800/50 h-full">
-      {/* Header del chat mejorado - ESTÁTICO */}
+      {/* Header del chat mejorado con valoraciones */}
       <div className="bg-gradient-to-r from-slate-800/80 to-slate-800/60 backdrop-blur-xl border-b border-slate-700/50 p-3 flex items-center justify-between shadow-lg sticky top-0 z-20">
         <div className="flex items-center space-x-4">
-          {/* Avatar sin estado */}
+          {/* Avatar con estado */}
           <div className="relative">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg ring-2 ring-blue-400/20">
               <span className="text-white font-bold text-sm">
@@ -205,15 +247,32 @@ export default function ChatWindow({
             <h3 className="text-lg font-bold text-slate-50 mb-0.5">
               {otherUser?.nombre || 'Usuario desconocido'}
             </h3>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <p className="text-xs text-green-400 font-medium">En línea</p>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <p className="text-xs text-green-400 font-medium">En línea</p>
+              </div>
+              
+              {/* Valoración */}
+              {estadisticas && estadisticas.totalValoraciones > 0 && (
+                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-yellow-500/10 rounded-full border border-yellow-500/20">
+                  <svg className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                  <span className="text-xs font-bold text-yellow-400">
+                    {estadisticas.promedioValoracion?.toFixed(1) || '0.0'}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    ({estadisticas.totalValoraciones})
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
-          {/* Botón de cerrar - siempre visible */}
+          {/* Botón de cerrar */}
           <button
             onClick={() => onClose && onClose()}
             className="p-2 text-slate-400 hover:bg-red-500/20 hover:text-red-400 rounded-xl transition-all duration-300 hover:scale-110"
@@ -338,12 +397,49 @@ export default function ChatWindow({
 
         {/* Input de mensaje - ESTÁTICO EN LA PARTE INFERIOR */}
         <div className="sticky bottom-0 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/50">
+          {/* Botón de valoración */}
+          {!loadingValoracion && (
+            <div className="px-4 pt-3 pb-2">
+              {yaValorado ? (
+                <div className="flex items-center justify-center gap-2 py-2 px-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm font-medium text-green-400">
+                    Ya valoraste a este vendedor
+                  </span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowValoracionModal(true)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 hover:from-yellow-500/30 hover:to-orange-500/30 border border-yellow-500/30 rounded-lg transition-all group"
+                >
+                  <svg className="w-5 h-5 text-yellow-400 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                  <span className="text-sm font-medium text-yellow-400">
+                    Valorar Vendedor
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
+          
           <MessageInput 
             onSendMessage={handleSendMessage}
             disabled={loading || !!error}
           />
         </div>
       </div>
+
+      {/* Modal de Valoración */}
+      {showValoracionModal && (
+        <ValoracionModal
+          vendedor={otherUser}
+          onClose={() => setShowValoracionModal(false)}
+          onValoracionCreada={handleValoracionCreada}
+        />
+      )}
     </div>
   );
 }
