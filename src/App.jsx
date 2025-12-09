@@ -1,5 +1,6 @@
 // src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
@@ -19,8 +20,23 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import EditProfilePage from "./pages/EditProfilePage";
 import NotificationContainer from "./components/ui/NotificationContainer";
 import WebSocketManager from "./components/WebSocketManager";
+import SessionExpiredModal from "./components/ui/SessionExpiredModal";
 
 export default function App() {
+  const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setShowSessionExpiredModal(true);
+    };
+
+    window.addEventListener('sessionExpired', handleSessionExpired);
+
+    return () => {
+      window.removeEventListener('sessionExpired', handleSessionExpired);
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <WebSocketManager />
@@ -127,6 +143,9 @@ export default function App() {
 
       {/* Contenedor de notificaciones global */}
       <NotificationContainer />
+
+      {/* Modal de sesión expirada */}
+      {showSessionExpiredModal && <SessionExpiredModal />}
     </BrowserRouter>
   );
 }

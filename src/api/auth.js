@@ -1,4 +1,4 @@
-import http from "./http";
+import http, { resetSessionExpiredFlag } from "./http";
 import { setAuth, getAuth } from "../state/auth";
 
 const API_BASE =
@@ -41,6 +41,9 @@ export const login = async (payload) => {
 
     // Verifica que el backend devuelva token y usuario
     if (data?.token && data?.estado === 'ACTIVO') {
+      // Resetear flag de sesión expirada en login exitoso
+      resetSessionExpiredFlag();
+      
       setAuth({
         token: data.token,
         user: {

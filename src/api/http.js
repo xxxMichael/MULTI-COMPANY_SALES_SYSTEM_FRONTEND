@@ -1,6 +1,9 @@
 import axios from "axios";
 import { getAuth } from "../state/auth";
 
+// Variable global para rastrear si ya se mostró el modal
+let sessionExpiredShown = false;
+
 const http = axios.create({
   baseURL:
     import.meta.env.VITE_API_BASE ||
@@ -35,7 +38,7 @@ http.interceptors.request.use(
 /* ============================
  * Interceptor de RESPONSE
  *  - Logs de errores
- *  - Logout SOLO en 401 (no autenticado)
+ *  - Logout SOLO en 401 (no autenticado / token expirado)
  *    * 403: lo maneja la UI (el usuario está autenticado pero sin permisos)
  * ============================ */
 http.interceptors.response.use(
@@ -55,19 +58,29 @@ http.interceptors.response.use(
     });
 
     if (status === 401) {
-      import("../state/auth").then(({ clearAuth }) => {
-        try {
-          clearAuth();
-        } finally {
-          if (window.location.pathname !== "/login") {
-            window.location.href = "/login";
-          }
-        }
-      });
+      // Evitar mostrar múltiples modales
+      if (!sessionExpiredShown) {
+        sessionExpiredShown = true;
+        
+        // Disparar evento personalizado para mostrar el modal
+        window.dispatchEvent(new CustomEvent('sessionExpired'));
+        
+        // Limpiar auth después de un pequeño delay
+        setTimeout(() => {
+          import("../state/auth").then(({ clearAuth }) => {
+            clearAuth();
+          });
+        }, 500);
+      }
     }
 
     return Promise.reject(error);
   }
 );
+
+// Función para resetear el flag (útil después del login)
+export const resetSessionExpiredFlag = () => {
+  sessionExpiredShown = false;
+};
 
 export default http;
