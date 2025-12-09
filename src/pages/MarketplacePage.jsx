@@ -58,10 +58,10 @@ export default function MarketplacePage() {
     loadProducts();
   }, [currentPage, sortBy, filters, showInterests, pageSize]);
 
-  const pageSizeOptions = [6,9, 18, 32, 64];
+  const pageSizeOptions = [6, 12, 18, 32, 64];
 
   const handlePageSizeChange = (e) => {
-    const size = Number(e.target.value) || 9;
+    const size = Number(e.target.value) || 12;
     setPageSize(size);
     setCurrentPage(0);
   };
