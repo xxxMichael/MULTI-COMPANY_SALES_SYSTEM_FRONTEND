@@ -94,7 +94,7 @@ export default function MyProductsPage() {
         }
       });
 
-      // Si hay filtros, solicitamos más elementos y filtramos en el frontend
+      // Si hay filtros O si estamos en historial, solicitamos todos los elementos
       const hasFilters =
         apiFilters.searchTerm ||
         apiFilters.tipo ||
@@ -103,8 +103,8 @@ export default function MyProductsPage() {
         apiFilters.estado;
 
       let response;
-      if (hasFilters) {
-        // Pedimos un tamaño grande para poder filtrar del lado del cliente
+      if (hasFilters || showHistory) {
+        // Pedimos un tamaño grande para poder filtrar del lado del cliente o mostrar todo el historial
         response = await myProductsApi.getMyProducts(userId, {
           ...apiFilters,
           page: 0,
@@ -183,7 +183,15 @@ export default function MyProductsPage() {
           return true;
         });
 
-        // Calcular paginación local
+        // Si estamos en historial, mostrar todos sin paginar
+        if (showHistory) {
+          setProducts(productsData);
+          setTotalElements(productsData.length);
+          setTotalPages(0); // Sin paginación
+          return;
+        }
+
+        // Calcular paginación local para vista normal
         const total = productsData.length;
         const totalPg = Math.ceil(total / PAGE_SIZE) || 0;
         setTotalElements(total);
@@ -207,18 +215,24 @@ export default function MyProductsPage() {
 
       console.log("Productos después de filtrar:", productsData);
 
+      // Si estamos en historial, mostrar todos sin paginar
+      if (showHistory) {
+        setProducts(productsData);
+        setTotalElements(productsData.length);
+        setTotalPages(0); // Sin paginación
+      } else {
+        // Vista normal con paginación
+        const recalculatedTotal = productsData.length;
+        const recalculatedPages = Math.ceil(recalculatedTotal / PAGE_SIZE) || 0;
 
-  const recalculatedTotal = productsData.length;
-  const recalculatedPages = Math.ceil(recalculatedTotal / PAGE_SIZE) || 0;
+        const start = currentPage * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+        const paged = productsData.slice(start, end);
 
-
-  const start = currentPage * PAGE_SIZE;
-  const end = start + PAGE_SIZE;
-  const paged = productsData.slice(start, end);
-
-  setProducts(paged);
-  setTotalPages(recalculatedPages);
-  setTotalElements(recalculatedTotal);
+        setProducts(paged);
+        setTotalPages(recalculatedPages);
+        setTotalElements(recalculatedTotal);
+      }
     } catch (err) {
       console.error("Error al cargar productos:", err);
       setError("Error al cargar tus productos");
