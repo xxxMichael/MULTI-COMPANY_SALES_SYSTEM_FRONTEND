@@ -65,12 +65,10 @@ http.interceptors.response.use(
         // Disparar evento personalizado para mostrar el modal
         window.dispatchEvent(new CustomEvent('sessionExpired'));
         
-        // Limpiar auth después de un pequeño delay
-        setTimeout(() => {
-          import("../state/auth").then(({ clearAuth }) => {
-            clearAuth();
-          });
-        }, 500);
+        // Limpiar auth inmediatamente
+        import("../state/auth").then(({ clearAuth }) => {
+          clearAuth();
+        });
       }
     }
 

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Clock } from "lucide-react";
+import { clearAuth } from "../../state/auth";
 
 export default function SessionExpiredModal() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function SessionExpiredModal() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
+          clearAuth(); // Limpiar sesión antes de redirigir
           navigate("/login", { replace: true });
           return 0;
         }
@@ -23,6 +25,7 @@ export default function SessionExpiredModal() {
   }, [navigate]);
 
   const handleLoginNow = () => {
+    clearAuth(); // Limpiar sesión explícitamente
     navigate("/login", { replace: true });
   };
 
