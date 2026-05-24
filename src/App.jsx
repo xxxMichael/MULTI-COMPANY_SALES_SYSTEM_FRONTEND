@@ -1,35 +1,151 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// src/App.jsx
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
+import AdminCreateModeratorPage from "./pages/AdminCreateModeratorPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
+import AdminIncidentsPage from "./pages/AdminIncidentsPage";
+import AdminAppealsPage from "./pages/AdminAppealsPage";
+import AdminSystemPage from "./pages/AdminSystemPage";
+import WelcomePage from "./pages/WelcomePage";
+import MarketplacePage from "./pages/MarketplacePage";
+import MyProductsPage from "./pages/MyProductsPage";
+import CreateProductPage from "./pages/CreateProductPage";
+import ChatPage from "./pages/ChatPage";
+import ProtectedRoute from "./components/ProtectedRoute";
+import RecoverPasswordPage from "./pages/RecoverPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import EditProfilePage from "./pages/EditProfilePage";
+import NotificationContainer from "./components/ui/NotificationContainer";
+import WebSocketManager from "./components/WebSocketManager";
+import SessionExpiredModal from "./components/ui/SessionExpiredModal";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setShowSessionExpiredModal(true);
+    };
+
+    window.addEventListener('sessionExpired', handleSessionExpired);
+
+    return () => {
+      window.removeEventListener('sessionExpired', handleSessionExpired);
+    };
+  }, []);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <BrowserRouter>
+      <WebSocketManager />
+      <Routes>
+        <Route path="/" element={<Navigate to="/marketplace" replace />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route
+          path="/admin/create-moderator"
+          element={<AdminCreateModeratorPage />}
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute requiredRole={["ADMIN", "MODERATOR"]}>
+              <AdminUsersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/incidents"
+          element={
+            <ProtectedRoute requiredRole={["ADMIN", "MODERATOR"]}>
+              <AdminIncidentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/appeals"
+          element={
+            <ProtectedRoute requiredRole={["ADMIN", "MODERATOR"]}>
+              <AdminAppealsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/system"
+          element={
+            <ProtectedRoute requiredRole={["ADMIN"]}>
+              <AdminSystemPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/recover-password" element={<RecoverPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route
+          path="/edit-profile"
+          element={
+            <ProtectedRoute>
+              <EditProfilePage />
+            </ProtectedRoute>
+          }
+        />
 
-export default App
+        <Route
+          path="/marketplace"
+          element={
+            <ProtectedRoute>
+              <MarketplacePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/welcome"
+          element={
+            <ProtectedRoute>
+              <WelcomePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-products"
+          element={
+            <ProtectedRoute>
+              <MyProductsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/create-product"
+          element={
+            <ProtectedRoute>
+              <CreateProductPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <ChatPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 404 */}
+        <Route path="*" element={<Navigate to="/marketplace" replace />} />
+      </Routes>
+
+      {/* Contenedor de notificaciones global */}
+      <NotificationContainer />
+
+      {/* Modal de sesión expirada */}
+      {showSessionExpiredModal && <SessionExpiredModal />}
+    </BrowserRouter>
+  );
+}
